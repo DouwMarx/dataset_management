@@ -48,7 +48,8 @@ def main():
     l = len(list(r)) # Check that the length of the database will be the same as the number of severities
     return l,sevs
 
-
+if __name__ == "__main__":
+    main()
 
 # print(l)
 

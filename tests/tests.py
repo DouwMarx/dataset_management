@@ -15,4 +15,19 @@ class TestMongoDB(unittest.TestCase):
         result = main()
         self.assertIsInstance(result,np.ndarray)
 
+class TestPhenomenologicalDataBase(unittest.TestCase):
 
+    def test_build_phenomenological_database(self):
+        from dataset_management.phenomenological_model.build_phenomenological_database import main
+        result_len, n_severities = main()
+        self.assertEqual(result_len, n_severities)
+
+class TestFeaturesCompute(unittest.TestCase):
+
+    def test_update_database_with_computed_features(self):
+        from dataset_management.phenomenological_model.update_phenomenological_database import main
+        failure_dataset = main()
+
+        docs = failure_dataset.find_one({"time_series":{"$exists": False}}) # Check if there are any documents that are not time series
+
+        self.assertTrue(docs is not None)
