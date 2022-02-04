@@ -1,25 +1,12 @@
 from dataset_management import build_data_and_encodings as bde
 import pickle
 from pypm.phenomenological_bearing_model.make_data import PyBearingDataset
-from database_definitions import client
+from database_definitions import raw, processed, augmented
 
 
 def build_phenomenological_database(n_severities = 10, rapid=True):
     # Mongo database
-    if rapid:
-        client.phenomenological_rapid.failure_dataset.drop() # Remove the collection
-        db = client.phenomenological_rapid # Use a specific dataset for rapid iteration
-
-
-    else:
-        client.phenomenological.failure_dataset.drop() # Remove the collection
-        db = client.phenomenological
-
-    failure_dataset = db.failure_dataset    # Select a given collection to use
-
-    # failure_dataset.delete_one({}) # Clear the collection
-    # failure_dataset.delete_many({}) # Clear the collection
-
+    raw.delete_many({}) #  Remove the items in the collection
 
     o = PyBearingDataset(n_severities=n_severities, failure_modes=["ball", "inner", "outer"],quick_iter=rapid)  # TODO: Drive these parameters with governing yaml file
     result_dict = o.make_measurements_for_different_failure_mode()
@@ -34,12 +21,13 @@ def build_phenomenological_database(n_severities = 10, rapid=True):
             doc = {"mode": mode_name,
                    "severity": severity_name,
                    "meta_data": pickle.dumps(meta_data),
-                   "time_series": pickle.dumps(time_series)
+                   "time_series": pickle.dumps(time_series),
+                   "augmented":False
                    }
 
-            failure_dataset.insert_one(doc)  # Insert document into the collection
+            raw.insert_one(doc)  # Insert document into the collection
 
-    return failure_dataset # The mongodb collection
+    return raw# The mongodb collection
 
 
 def main():
