@@ -1,23 +1,24 @@
 from dataset_management import build_data_and_encodings as bde
 import pickle
 from pypm.phenomenological_bearing_model.make_data import PyBearingDataset
-from pymongo import MongoClient
+from database_definitions import client
 
 
 def build_phenomenological_database(n_severities = 10, rapid=True):
     # Mongo database
-    client = MongoClient()
-
     if rapid:
+        client.phenomenological_rapid.failure_dataset.drop() # Remove the collection
         db = client.phenomenological_rapid # Use a specific dataset for rapid iteration
 
+
     else:
+        client.phenomenological.failure_dataset.drop() # Remove the collection
         db = client.phenomenological
 
     failure_dataset = db.failure_dataset    # Select a given collection to use
 
     # failure_dataset.delete_one({}) # Clear the collection
-    failure_dataset.delete_many({}) # Clear the collection
+    # failure_dataset.delete_many({}) # Clear the collection
 
 
     o = PyBearingDataset(n_severities=n_severities, failure_modes=["ball", "inner", "outer"],quick_iter=rapid)  # TODO: Drive these parameters with governing yaml file

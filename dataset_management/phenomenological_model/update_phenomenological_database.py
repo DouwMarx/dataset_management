@@ -3,7 +3,9 @@ from augment_data.phenomenological_ses.make_phenomenological_ses import Augmente
 from sklearn.decomposition import PCA
 from signal_processing.spectra import env_spec, envelope
 import pickle
-from pymongo import MongoClient
+from database_definitions import client
+
+
 
 
 def compute_signal_augmentation(entry):
@@ -137,7 +139,7 @@ def compute_encodings(data):
     return data
 
 
-def compute_augmentation_from_feature(doc, healthy_envelope_spectrum):
+def compute_augmentation_from_feature(doc, rapid = True):
     """
     Augments healthy data towards a faulty state for a given failure mode.
 
@@ -151,6 +153,24 @@ def compute_augmentation_from_feature(doc, healthy_envelope_spectrum):
     -------
 
     """
+
+    if rapid:
+        db = client.phenomenological_rapid  # Use a specific dataset for rapid iteration
+
+    else:
+        db = client.phenomenological
+
+    healthy_envelope_spectrum = db.failure_dataset.find_one({"envelope_spectrum": {"$exists":True},
+                                                             "severity":"0",
+                                                             "mode":doc["mode"]})#projection = "envelope_spectrum") # The value of the entry found to include
+    # print(healthy_envelope_spectrum.keys())
+    # print(pickle.loads(healthy_envelope_spectrum).keys())
+
+    # healthy_envelope_spectrum = pickle.loads(healthy_envelope_spectrum["envelope_spectrum"])
+    healthy_envelope_spectrum = pickle.loads(healthy_envelope_spectrum["envelope_spectrum"])
+    healthy_envelope_spectrum =healthy_envelope_spectrum["mag"]
+
+    print(healthy_envelope_spectrum.shape)
 
     meta_data = pickle.loads(doc["meta_data"])
     fs = meta_data["sampling_frequency"]
@@ -172,7 +192,7 @@ def compute_augmentation_from_feature(doc, healthy_envelope_spectrum):
             "augmentation_meta_data": {"this":"that"}}]
 
 
-def compute_features_from_time_series_doc(doc):
+def compute_features_from_time_series_doc(doc,**kwargs):
     signal = pickle.loads(doc["time_series"])  # Get time signal
     # Get sampling frequency
     meta_data = pickle.loads(doc["meta_data"])
@@ -193,9 +213,6 @@ def compute_features_from_time_series_doc(doc):
 
 
 def new_derived_doc(query, function_to_apply, rapid=True):
-    # Mongo database
-    client = MongoClient()
-
     if rapid:
         db = client.phenomenological_rapid  # Use a specific dataset for rapid iteration
 
@@ -204,15 +221,16 @@ def new_derived_doc(query, function_to_apply, rapid=True):
 
     failure_dataset = db.failure_dataset
 
+    # failure_dataset.delete_many({"augmented": {"$exists": True}})  # Remove if already existing
+
     # Loop through all the documents that satisfy the conditions of the query
     for doc in failure_dataset.find(query):
-        computed = function_to_apply(doc) # TODO: Need keyword arguments to make this work. Or global variable?
+        # print(doc)
+        computed = function_to_apply(doc, rapid = rapid) # TODO: Need keyword arguments to make this work. Or global variable?
 
         # Create a new document for each of the computed features, duplicate some of the original data
         for feature in computed:
-            feature_name = list(feature.keys())[0]
-
-            failure_dataset.delete_many({feature_name: {"$exists": True}})  # Remove if already existing
+            # TODO: Figure out how to deal with overwrites
 
             new_doc = {"mode": doc["mode"],
                        "severity": doc["severity"],
@@ -228,8 +246,12 @@ def new_derived_doc(query, function_to_apply, rapid=True):
 
 def main():
     query = {"time_series": {"$exists": True}}
-    return new_derived_doc(query, compute_features_from_time_series_doc)
+    new_derived_doc(query, compute_features_from_time_series_doc)
+
+    query = {"envelope_spectrum": {"$exists": True}}
+    fd = new_derived_doc(query, compute_augmentation_from_feature)
+    return fd
 
 
 if __name__ == "__main__":
-    main()
+    fd = main()
