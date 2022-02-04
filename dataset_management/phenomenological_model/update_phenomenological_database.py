@@ -137,7 +137,62 @@ def compute_encodings(data):
     return data
 
 
-def update_database_with_computed_features(rapid=True):
+def compute_augmentation_from_feature(doc, healthy_envelope_spectrum):
+    """
+    Augments healthy data towards a faulty state for a given failure mode.
+
+    Parameters
+    ----------
+    mode
+    severity
+    results_dict
+
+    Returns
+    -------
+
+    """
+
+    meta_data = pickle.loads(doc["meta_data"])
+    fs = meta_data["sampling_frequency"]
+
+    expected_fault_frequency = meta_data["derived"]["average_fault_frequency"]
+
+    # # Using all of the healthy ses as input means that the augmented dataset will have the noise of the training set
+    # # However, among the augmented dataset the "signal" will be identical
+    # # notice the "0" meaning that we are using healthy data
+    # healthy_ses = pickle.loads(entry["envelope_spectrum"])["mag"]  # [0] # Use the first one
+
+    ases = AugmentedSES(healthy_ses=healthy_envelope_spectrum, fs=fs, fault_frequency=expected_fault_frequency,
+                        peak_magnitude=0.03)  # TODO: Fix peak magnitude, providing augmentation parameters?
+    envelope_spectrum = ases.get_augmented_ses()
+
+    return [{"envelope_spectrum": pickle.dumps({"freq": ases.frequencies,
+                                               "mag": envelope_spectrum}),
+            "augmented":"True",
+            "augmentation_meta_data": {"this":"that"}}]
+
+
+def compute_features_from_time_series_doc(doc):
+    signal = pickle.loads(doc["time_series"])  # Get time signal
+    # Get sampling frequency
+    meta_data = pickle.loads(doc["meta_data"])
+    fs = meta_data["sampling_frequency"]
+
+    # Compute features # TODO: Make modular to select features to compute
+    env = envelope(signal)  # The envelope of the signal can also be added to the computed features
+    freq, mag, phase = env_spec(signal, fs=fs)
+
+    envelope_time_series = {"envelope_time_series": pickle.dumps(env)}
+    envelope_spectrum = {"envelope_spectrum": pickle.dumps({"freq": freq,
+                                                            "mag": mag,
+                                                            "phase": phase
+                                                            })}
+    computed_features = [envelope_time_series, envelope_spectrum]
+
+    return computed_features
+
+
+def new_derived_doc(query, function_to_apply, rapid=True):
     # Mongo database
     client = MongoClient()
 
@@ -149,42 +204,32 @@ def update_database_with_computed_features(rapid=True):
 
     failure_dataset = db.failure_dataset
 
-    # Loop through all the documents that have a time series entry
-    for doc in failure_dataset.find({"time_series": {"$exists": True}}):
-        signal = pickle.loads(doc["time_series"]) # Get time signal
-
-        # Get sampling frequency
-        meta_data = pickle.loads(doc["meta_data"])
-        fs = meta_data["sampling_frequency"]
-
-        # Compute features # TODO: Make modular to select features to compute
-        env = envelope(signal)  # The envelope of the signal can also be added to the computed features
-        freq, mag, phase = env_spec(signal, fs=fs)
-
-        envelope_time_series = {"envelope_time_series": pickle.dumps(env)}
-        envelope_spectrum = {"envelope_spectrum": pickle.dumps({"freq": freq,
-                                                                "mag": mag,
-                                                                "phase": phase
-                                                                })}
-        computed_features = [envelope_time_series, envelope_spectrum]
+    # Loop through all the documents that satisfy the conditions of the query
+    for doc in failure_dataset.find(query):
+        computed = function_to_apply(doc) # TODO: Need keyword arguments to make this work. Or global variable?
 
         # Create a new document for each of the computed features, duplicate some of the original data
-        for feature in computed_features:
+        for feature in computed:
             feature_name = list(feature.keys())[0]
 
-            failure_dataset.delete_many({feature_name: {"$exists": True}})  # Remove if existing
+            failure_dataset.delete_many({feature_name: {"$exists": True}})  # Remove if already existing
 
             new_doc = {"mode": doc["mode"],
                        "severity": doc["severity"],
                        "meta_data": doc["meta_data"],
-                       feature_name: feature[feature_name]
+                       # feature_name: feature[feature_name]
                        }
+
+            new_doc.update(feature)  # Add the newly computed data to a document containing the original meta data
+
             failure_dataset.insert_one(new_doc)
     return failure_dataset
 
+
 def main():
-    return update_database_with_computed_features(rapid=True)
+    query = {"time_series": {"$exists": True}}
+    return new_derived_doc(query, compute_features_from_time_series_doc)
+
 
 if __name__ == "__main__":
     main()
-
