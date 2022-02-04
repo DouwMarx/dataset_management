@@ -5,9 +5,6 @@ from signal_processing.spectra import env_spec, envelope
 import pickle
 from database_definitions import client
 
-
-
-
 def compute_signal_augmentation(entry):
     """
     Augments healthy data towards a faulty state for a given failure mode.
@@ -139,7 +136,8 @@ def compute_encodings(data):
     return data
 
 
-def compute_augmentation_from_feature(doc, rapid = True):
+
+def compute_augmentation_from_feature_doc(doc, rapid = True):
     """
     Augments healthy data towards a faulty state for a given failure mode.
 
@@ -244,14 +242,69 @@ def new_derived_doc(query, function_to_apply, rapid=True):
     return failure_dataset
 
 
-def main():
-    query = {"time_series": {"$exists": True}}
-    new_derived_doc(query, compute_features_from_time_series_doc)
+# def main():
+query = {"time_series": {"$exists": True}}
+new_derived_doc(query, compute_features_from_time_series_doc)
 
-    query = {"envelope_spectrum": {"$exists": True}}
-    fd = new_derived_doc(query, compute_augmentation_from_feature)
-    return fd
+query = {"envelope_spectrum": {"$exists": True}}
+fd = new_derived_doc(query, compute_augmentation_from_feature_doc)
+    # return fd
 
 
-if __name__ == "__main__":
-    fd = main()
+    ###########################3
+
+
+# healthy_envelope_spectrum = fd.find_one({"envelope_spectrum": {"$exists": True},
+#                                                          "severity": "0",
+#                                                          "mode": doc[
+#                                                              "mode"]})  # projection = "envelope_spectrum") # The value of the entry found to include
+
+# Define models
+model_healthy_only = PCA(2)
+model_healthy_only.name = "healthy_only_pca"
+model_healthy_and_augmented = PCA(2)
+model_healthy_and_augmented.name = "healthy_and_augmented_pca"
+
+# Set up training data
+# Healthy data only
+all_healthy = [pickle.loads(doc["envelope_spectrum"])["mag"] for doc in fd.find({"envelope_spectrum": {"$exists": True},"augmented":{"$exists": False}})]
+healthy_train = limit_frequency_components(np.vstack(
+    all_healthy))  # Healthy data from different "modes" even though modes don't technically exist when healthy
+
+# # Healthy and augmented data
+# all_augmented_modes = [data[mode]["1"]["augmented_envelope_spectrum"]["mag"] for mode in list(data.keys())]
+# augmented_and_healthy_train = limit_frequency_components(np.vstack(all_healthy + all_augmented_modes))
+#
+# # Train the models
+# model_healthy_only.fit(healthy_train)
+# model_healthy_and_augmented.fit(augmented_and_healthy_train)
+#
+# # List of trained models
+# models = [model_healthy_only, model_healthy_and_augmented]
+#
+# # Loop through all failure modes and severities.
+# # For both the augmented and actual data, compute the expected encoding for each of the trained models.
+# for mode_name, mode_data in data.items():
+#     for
+# severity_name, severity_data in mode_data.items():
+# data_type_dict = {}  # Data type refers to either real or augmented
+# for data_type in ["envelope_spectrum", "augmented_envelope_spectrum"]:
+#     model_type_dict = {}
+# for model in models:
+#     encoding = model.transform(
+#         limit_frequency_components(severity_data[data_type]["mag"]))
+#
+# # Update the dictionary with the encodings
+# model_type_dict.update({model.name: encoding})
+# data_type_dict.update({data_type + "_encoding": model_type_dict})
+# data[mode_name][severity_name].update(data_type_dict)
+# return data
+#
+# return [{"envelope_spectrum": pickle.dumps({"freq": ases.frequencies,
+#                                             "mag": envelope_spectrum}),
+#          "augmented": "True",
+#          "augmentation_meta_data": {"this": "that"}}]
+
+
+# if __name__ == "__main__":
+#     fd = main()
