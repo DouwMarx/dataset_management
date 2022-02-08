@@ -103,8 +103,6 @@ def compute_augmentation_from_feature_doc(doc, rapid = True):
     healthy_envelope_spectrum = pickle.loads(healthy_envelope_spectrum["envelope_spectrum"])
     healthy_envelope_spectrum =healthy_envelope_spectrum["mag"]
 
-    print(healthy_envelope_spectrum.shape)
-
     meta_data = pickle.loads(doc["meta_data"])
     fs = meta_data["sampling_frequency"]
 
@@ -184,6 +182,12 @@ def new_derived_doc(query, source_collection, target_collection, function_to_app
 
 
 def get_trained_models():
+    train_on_all_models = get_trained_models_train_on_all()
+    trained_on_mode_models = get_trained_on_specific_failure_mode()
+
+    return train_on_all_models + trained_on_mode_models
+
+def get_trained_models_train_on_all():
     # Define models
     model_healthy_only = PCA(2)
     model_healthy_only.name = "healthy_only_pca"
@@ -200,6 +204,7 @@ def get_trained_models():
 
     # # Healthy and augmented data
     all_augmented_modes = [pickle.loads(doc["envelope_spectrum"])["mag"] for doc in augmented.find({"envelope_spectrum": {"$exists": True},
+                                                                                                    "severity":"9",
                                                                                                     "augmented":True})]
     augmented_and_healthy_train = limit_frequency_components(np.vstack(all_healthy + all_augmented_modes))
 
@@ -210,6 +215,44 @@ def get_trained_models():
     # List of trained models
     models = [model_healthy_only, model_healthy_and_augmented]
     return models
+
+
+def get_trained_on_specific_failure_mode():
+    # Define models
+    failure_modes = augmented.distinct("mode")
+
+    # Create a model for each failure mode
+    models = [PCA(2) for failure_mode in failure_modes]
+
+    # Give each model a name
+    trained_models = []
+    for model,mode_name in zip(models, failure_modes):
+        model.name = "PCA2_health_and_" + mode_name
+
+        # Set up training data
+        # Healthy data only
+        healthy = [pickle.loads(doc["envelope_spectrum"])["mag"] for doc in processed.find({"envelope_spectrum": {"$exists": True},
+                                                                                                "augmented":False,
+                                                                                                "severity":"0",
+                                                                                                "mode": mode_name
+                                                                                            })]
+        healthy_train = limit_frequency_components(np.vstack(healthy)) # Using all of the healthy data from all "modes" (even though healthy
+
+        # Augmented data
+        all_augmented_modes = [pickle.loads(doc["envelope_spectrum"])["mag"] for doc in augmented.find({"envelope_spectrum": {"$exists": True},
+                                                                                                        "severity":"9", # Using the maximum severity only during training
+                                                                                                        "mode": mode_name,
+                                                                                                        "augmented":True})]
+
+        all_augmented_modes = limit_frequency_components(np.vstack(all_augmented_modes)) # Using all of the healthy data from all "modes" (even though healthy
+        # print(all_augmented_modes[0].shape)
+        augmented_and_healthy_train = np.vstack([healthy_train,all_augmented_modes])
+
+        # # Train the models
+        model.fit(augmented_and_healthy_train)
+        trained_models.append(model)
+    return models
+
 
 # def main():
 processed.delete_many({})
@@ -231,6 +274,10 @@ new_derived_doc(query, augmented, encoding, compute_encoding_from_doc)
 
 query = {"augmented": False,"envelope_spectrum":{"$exists":True}}
 new_derived_doc(query, processed, encoding, compute_encoding_from_doc)
+
+
+# a = get_trained_on_specific_failure_mode()
+
 
 #
 # models = get_trained_models()
