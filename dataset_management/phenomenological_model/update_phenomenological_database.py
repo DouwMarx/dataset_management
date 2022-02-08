@@ -275,21 +275,8 @@ new_derived_doc(query, augmented, encoding, compute_encoding_from_doc)
 query = {"augmented": False,"envelope_spectrum":{"$exists":True}}
 new_derived_doc(query, processed, encoding, compute_encoding_from_doc)
 
+def main():
+    return
 
-# a = get_trained_on_specific_failure_mode()
-
-
-#
-# models = get_trained_models()
-#
-# # Loop through all failure modes and severities.
-# # For both the augmented and actual data, compute the expected encoding for each of the trained models.
-# for doc in processed.find(): # TODO, need to do encodings for both real and augmented
-#     encodings_for_models = []
-#     for model in models:
-#         encoding = model.transform(limit_frequency_components(pickle.loads(doc["envelope_spectrum"])["mag"]))
-#         encodings_for_models.append({"encoding": pickle.dumps(encoding),
-#                                      "model_used": model.name})
-
-# if __name__ == "__main__":
-#     fd = main()
+if __name__ == "__main__":
+    fd = main()

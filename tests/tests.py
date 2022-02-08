@@ -25,9 +25,7 @@ class TestPhenomenologicalDataBase(unittest.TestCase):
 class TestFeaturesCompute(unittest.TestCase):
 
     def test_update_database_with_computed_features(self):
-        from dataset_management.phenomenological_model.update_phenomenological_database import main
-        failure_dataset = main()
-
-        docs = failure_dataset.find_one({"time_series":{"$exists": False}}) # Check if there are any documents that are not time series
+        from database_definitions import processed
+        docs = processed.find_one({}) # Check if there are any documents that are not time series
 
         self.assertTrue(docs is not None)
