@@ -41,25 +41,7 @@ def update_database_with_metrics():
 
             healthy_projection = np.dot(all_healthy_encoding, normalized_direction_between_augmented_and_healthy)
 
-            stat, p = ttest_ind(healthy_projection, measured_projection)
-
-            healthy_mean = np.mean(healthy_projection, axis=0)
-            healthy_sd = np.std(healthy_projection, axis=0)
-
-            sample_likelihood_measured = norm(healthy_mean, healthy_sd).pdf(measured_projection)
-            sample_likelihood_healthy = norm(healthy_mean, healthy_sd).pdf(healthy_projection)
-
-
-            # Compute likelihoods given the distribution
-            likelihoods = np.hstack([sample_likelihood_measured,sample_likelihood_healthy])
-
-            labels = np.hstack([np.ones(np.shape(sample_likelihood_measured)),
-                                np.zeros(np.shape(sample_likelihood_healthy))])
-
-            # Compute AUC from the RUC
-            fpr, tpr ,threash = roc_curve(labels,likelihoods, pos_label=0)
-            auc_score = auc(fpr, tpr)
-
+            p,auc_score = get_metrics_for_failure_direction_projection(healthy_projection, measured_projection)
 
             #  Set up a dictionary of computed metrics
             metrics_dict = {"severity": doc["severity"],
@@ -76,6 +58,26 @@ def update_database_with_metrics():
             metrics.insert_one(metrics_dict)
     return metrics
 
+def get_metrics_for_failure_direction_projection(healthy_projection,measured_projection):
+    stat, p = ttest_ind(healthy_projection, measured_projection)
+
+    healthy_mean = np.mean(healthy_projection, axis=0)
+    healthy_sd = np.std(healthy_projection, axis=0)
+
+    sample_likelihood_measured = norm(healthy_mean, healthy_sd).pdf(measured_projection)
+    sample_likelihood_healthy = norm(healthy_mean, healthy_sd).pdf(healthy_projection)
+
+    # Compute likelihoods given the distribution
+    likelihoods = np.hstack([sample_likelihood_measured, sample_likelihood_healthy])
+
+    labels = np.hstack([np.ones(np.shape(sample_likelihood_measured)),
+                        np.zeros(np.shape(sample_likelihood_healthy))])
+
+    # Compute AUC from the RUC
+    fpr, tpr, threash = roc_curve(labels, likelihoods, pos_label=0)
+    auc_score = auc(fpr, tpr)
+
+    return p,auc_score
 
 
 metrics.delete_many({})
