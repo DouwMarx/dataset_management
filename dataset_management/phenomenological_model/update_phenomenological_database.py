@@ -114,7 +114,7 @@ def compute_augmentation_from_feature_doc(doc, rapid = True):
     # healthy_ses = pickle.loads(entry["envelope_spectrum"])["mag"]  # [0] # Use the first one
 
     ases = AugmentedSES(healthy_ses=healthy_envelope_spectrum, fs=fs, fault_frequency=expected_fault_frequency,
-                        peak_magnitude=0.03)  # TODO: Fix peak magnitude, providing augmentation parameters?
+                        peak_magnitude=0.02)  # TODO: Fix peak magnitude, providing augmentation parameters?
     envelope_spectrum = ases.get_augmented_ses()
 
     return [{"envelope_spectrum": pickle.dumps({"freq": ases.frequencies,
