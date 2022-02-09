@@ -33,6 +33,7 @@ def update_database_with_metrics():
             encoding_array = pickle.loads(severe_failure_augmented_encoding["encoding"])
             expected_damaged_mean = np.mean(encoding_array, axis=0)
 
+            # LATENT METRICS
             # Compute the direction between the healthy data and the expected damaged data
             direction_between_augmented_and_healthy = expected_damaged_mean-healthy_encoding_mean
             normalized_direction_between_augmented_and_healthy = direction_between_augmented_and_healthy / np.linalg.norm(direction_between_augmented_and_healthy)
@@ -42,6 +43,7 @@ def update_database_with_metrics():
             healthy_projection = np.dot(all_healthy_encoding, normalized_direction_between_augmented_and_healthy)
 
             p,auc_score = get_metrics_for_failure_direction_projection(healthy_projection, measured_projection)
+
 
             #  Set up a dictionary of computed metrics
             metrics_dict = {"severity": doc["severity"],
