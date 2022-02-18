@@ -32,7 +32,7 @@ def build_phenomenological_database(n_severities = 10, rapid=True):
 
 def main():
     sevs = 10
-    fd = build_phenomenological_database(n_severities=sevs, rapid=True)
+    fd = build_phenomenological_database(n_severities=sevs, rapid=False)
     r = fd.find({"mode":"inner"})
     l = len(list(r)) # Check that the length of the database will be the same as the number of severities
     return l, sevs

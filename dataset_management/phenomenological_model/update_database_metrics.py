@@ -5,7 +5,7 @@ from definitions import data_dir
 from scipy.stats import ttest_ind, norm, multivariate_normal
 import pickle
 from sklearn.metrics import roc_curve, auc
-from dataset_management.phenomenological_model.update_phenomenological_database import limit_frequency_components
+from dataset_management.phenomenological_model.update_database_with_processed import limit_frequency_components
 
 
 def update_database_with_metrics():
@@ -44,19 +44,14 @@ def update_database_with_metrics():
             }
         )
         measured_ses =limit_frequency_components(pickle.loads(measured_ses["envelope_spectrum"])["mag"])
-        print(measured_ses.shape)
 
         measured_encoding = pickle.loads(doc["encoding"])
         measured_reconstruction = pickle.loads(doc["reconstruction"])
-        print(measured_reconstruction.shape)
 
         # RECONSTRUCTION Metrics
         # stat, p = ttest_ind(healthy_projection, measured_projection)
         healthy_reconstruction_error = np.linalg.norm(all_healthy_ses - all_healthy_reconstruction, axis=1)
         sample_reconstruction_error = np.linalg.norm(measured_ses - measured_reconstruction, axis=1)
-
-        print(healthy_reconstruction_error.shape)
-        print(sample_reconstruction_error.shape)
 
         # # Compute likelihoods given the distribution
         # likelihoods = np.hstack([sample_likelihood_measured, sample_likelihood_healthy])
@@ -66,10 +61,11 @@ def update_database_with_metrics():
                             np.zeros(np.shape(healthy_reconstruction_error))])
 
         # Compute AUC from the ROC
-        fpr, tpr, threash = roc_curve(labels, reconstruction_errors, pos_label=0)
+        fpr, tpr, threash = roc_curve(labels, np.e**-reconstruction_errors, pos_label=0)
         auc_score = auc(fpr, tpr)
         metrics_dict = {"severity": doc["severity"],
                         "mode": doc["mode"],
+                        "expected_mode": doc["mode"],
                         "model_used": doc["model_used"],
                         "auc_reconstruct": auc_score
                         }
@@ -162,5 +158,6 @@ def get_metrics_for_reconstruction_error(healthy_reconstruction, measured_recons
     return p  # ,auc_score
 
 
-metrics.delete_many({})
-update_database_with_metrics()
+def main():
+    metrics.delete_many({})
+    update_database_with_metrics()

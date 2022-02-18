@@ -18,7 +18,7 @@ class TestMongoDB(unittest.TestCase):
 class TestPhenomenologicalDataBase(unittest.TestCase):
 
     def test_build_phenomenological_database(self):
-        from dataset_management.phenomenological_model.build_phenomenological_database import main
+        from dataset_management.phenomenological_model.add_raw_data_to_database import main
         result_len, n_severities = main()
         self.assertEqual(result_len, n_severities)
 

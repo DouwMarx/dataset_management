@@ -6,7 +6,7 @@ import pickle
 from database_definitions import raw, processed, augmented, encoding
 
 
-def limit_frequency_components(arr, fraction_of_spectrum_to_use=0.25):
+def limit_frequency_components(arr, fraction_of_spectrum_to_use=0.1):
     """
     Removes the DC component of the Squared envelope spectrum.
     Furthermore, it uses only a fraction of the total spectrum
@@ -61,7 +61,8 @@ def compute_augmentation_from_feature_doc(doc, rapid=True):
     # healthy_ses = pickle.loads(entry["envelope_spectrum"])["mag"]  # [0] # Use the first one
 
     ases = AugmentedSES(healthy_ses=healthy_envelope_spectrum, fs=fs, fault_frequency=expected_fault_frequency,
-                        peak_magnitude=0.02)  # TODO: Fix peak magnitude, providing augmentation parameters?
+                        peak_magnitude=0.01,
+                        percentage_of_freqs_to_decay_99_percent=0.5)  # TODO: Fix peak magnitude, providing augmentation parameters?
     envelope_spectrum = ases.get_augmented_ses()
 
     return [{"envelope_spectrum": pickle.dumps({"freq": ases.frequencies,
@@ -215,29 +216,25 @@ def get_trained_on_specific_failure_mode():
     return models
 
 
-# def main():
-processed.delete_many({})
-augmented.delete_many({})
-encoding.delete_many({})
-
-# Process the time data
-query = {"time_series": {"$exists": True}}
-new_derived_doc(query, raw, processed, compute_features_from_time_series_doc)
-
-# Compute augmented data
-query = {"envelope_spectrum": {"$exists": True}}
-new_derived_doc(query, processed, augmented, compute_augmentation_from_feature_doc)
-
-# Apply encoding for both augmented and not augmented data
-query = {"augmented": True}
-new_derived_doc(query, augmented, encoding, compute_encoding_from_doc)
-
-query = {"augmented": False, "envelope_spectrum": {"$exists": True}}
-new_derived_doc(query, processed, encoding, compute_encoding_from_doc)
-
-
 def main():
-    return
+    processed.delete_many({})
+    augmented.delete_many({})
+    encoding.delete_many({})
+
+    # Process the time data
+    query = {"time_series": {"$exists": True}}
+    new_derived_doc(query, raw, processed, compute_features_from_time_series_doc)
+
+    # Compute augmented data
+    query = {"envelope_spectrum": {"$exists": True}}
+    new_derived_doc(query, processed, augmented, compute_augmentation_from_feature_doc)
+
+    # Apply encoding for both augmented and not augmented data
+    query = {"augmented": True}
+    new_derived_doc(query, augmented, encoding, compute_encoding_from_doc)
+
+    query = {"augmented": False, "envelope_spectrum": {"$exists": True}}
+    new_derived_doc(query, processed, encoding, compute_encoding_from_doc)
 
 
 if __name__ == "__main__":
