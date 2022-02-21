@@ -3,7 +3,8 @@ from augment_data.phenomenological_ses.make_phenomenological_ses import Augmente
 from sklearn.decomposition import PCA
 from signal_processing.spectra import env_spec, envelope
 import pickle
-from database_definitions import raw, processed, augmented, encoding
+# from database_definitions import raw, processed, augmented, encoding # Delete this and define locally to allow for parallel operations.
+from database_definitions import make_db
 
 
 def limit_frequency_components(arr, fraction_of_spectrum_to_use=0.1):
@@ -24,7 +25,7 @@ def limit_frequency_components(arr, fraction_of_spectrum_to_use=0.1):
     return arr[:, 1:use]
 
 
-def compute_augmentation_from_feature_doc(doc, rapid=True):
+def compute_augmentation_from_feature_doc(doc, db):
     """
     Augments healthy data towards a faulty state for a given failure mode.
 
@@ -39,7 +40,7 @@ def compute_augmentation_from_feature_doc(doc, rapid=True):
 
     """
 
-    healthy_envelope_spectrum = processed.find_one({"envelope_spectrum": {"$exists": True},
+    healthy_envelope_spectrum = db["processed"].find_one({"envelope_spectrum": {"$exists": True},
                                                     "severity": "0",
                                                     "mode": doc[
                                                         "mode"]})  # projection = "envelope_spectrum") # The value of the entry found to include
@@ -71,7 +72,7 @@ def compute_augmentation_from_feature_doc(doc, rapid=True):
              "augmentation_meta_data": {"this": "that"}}]
 
 
-def compute_features_from_time_series_doc(doc, **kwargs):
+def compute_features_from_time_series_doc(doc, db):
     signal = pickle.loads(doc["time_series"])  # Get time signal
     # Get sampling frequency
     meta_data = pickle.loads(doc["meta_data"])
@@ -95,9 +96,10 @@ def compute_features_from_time_series_doc(doc, **kwargs):
     return computed_features
 
 
-def compute_encoding_from_doc(doc, **kwargs):
+def compute_encoding_from_doc(doc, db):
     # TODO: make sure encodings are computed for both real and augmented data
-    models = get_trained_models()
+    models = get_trained_models(db)
+    # print("models",models[0],len(models))
     encodings_for_models = []
     for model in models:
         encoding = model.transform(limit_frequency_components(pickle.loads(doc["envelope_spectrum"])["mag"]))
@@ -113,12 +115,30 @@ def compute_encoding_from_doc(doc, **kwargs):
     return encodings_for_models
 
 
-def new_derived_doc(query, source_collection, target_collection, function_to_apply, rapid=True):
+def new_derived_doc(query, source_name, target_name, function_to_apply):
     # Loop through all the documents that satisfy the conditions of the query
+
+    db, client = make_db()
+
+    source_collection = db[source_name]
+    target_collection = db[target_name]
+
+    # processed = db["processed"]
+    # augmented = db["augmented"]
+    # encoding = db["encoding"]
+    # metrics = db["metrics"]
+
+
+    cursor =  source_collection.find(query)
+
+    # print(cursor.count())
+    if cursor.count() == 0:
+        print("No examples match the query in the source database")
+
+
+
     for doc in source_collection.find(query):
-        # print(doc)
-        computed = function_to_apply(doc,
-                                     rapid=rapid)  # TODO: Need keyword arguments to make this work. Or global variable?
+        computed = function_to_apply(doc, db)  # TODO: Need keyword arguments to make this work. Or global variable?
 
         # Create a new document for each of the computed features, duplicate some of the original data
         for feature in computed:  # TODO: Could make use of insert_many?
@@ -133,17 +153,23 @@ def new_derived_doc(query, source_collection, target_collection, function_to_app
             new_doc.update(feature)  # Add the newly computed data to a document containing the original meta data
 
             target_collection.insert_one(new_doc)
+
+    client.close()
     return target_collection
 
 
-def get_trained_models():
-    train_on_all_models = get_trained_models_train_on_all()
-    trained_on_mode_models = get_trained_on_specific_failure_mode()
+def get_trained_models(db):
+    train_on_all_models = get_trained_models_train_on_all(db)
+
+    trained_on_mode_models = get_trained_on_specific_failure_mode(db) # TODO: This is the problem case
 
     return train_on_all_models + trained_on_mode_models
 
 
-def get_trained_models_train_on_all():
+def get_trained_models_train_on_all(db):
+    possible_severities = db["augmented"].distinct("severity")
+    max_severity = possible_severities[-1]
+
     # Define models
     model_healthy_only = PCA(2)
     model_healthy_only.name = "healthy_only_pca"
@@ -153,7 +179,7 @@ def get_trained_models_train_on_all():
     # Set up training data
     # Healthy data only
     all_healthy = [pickle.loads(doc["envelope_spectrum"])["mag"] for doc in
-                   processed.find({"envelope_spectrum": {"$exists": True},
+                   db["processed"].find({"envelope_spectrum": {"$exists": True},
                                    "augmented": False,
                                    "severity": "0"})]
     healthy_train = limit_frequency_components(np.vstack(
@@ -161,8 +187,8 @@ def get_trained_models_train_on_all():
 
     # # Healthy and augmented data
     all_augmented_modes = [pickle.loads(doc["envelope_spectrum"])["mag"] for doc in
-                           augmented.find({"envelope_spectrum": {"$exists": True},
-                                           "severity": "9",
+                           db["augmented"].find({"envelope_spectrum": {"$exists": True},
+                                           "severity": max_severity,
                                            "augmented": True})]
     augmented_and_healthy_train = limit_frequency_components(np.vstack(all_healthy + all_augmented_modes))
 
@@ -175,12 +201,15 @@ def get_trained_models_train_on_all():
     return models
 
 
-def get_trained_on_specific_failure_mode():
+def get_trained_on_specific_failure_mode(db):
     # Define models
-    failure_modes = augmented.distinct("mode")
+    failure_modes = db["augmented"].distinct("mode")
 
     # Create a model for each failure mode
     models = [PCA(2) for failure_mode in failure_modes]
+
+    possible_severities = db["augmented"].distinct("severity")
+    max_severity = possible_severities[-1]
 
     # Give each model a name
     trained_models = []
@@ -190,7 +219,7 @@ def get_trained_on_specific_failure_mode():
         # Set up training data
         # Healthy data only
         healthy = [pickle.loads(doc["envelope_spectrum"])["mag"] for doc in
-                   processed.find({"envelope_spectrum": {"$exists": True},
+                   db["processed"].find({"envelope_spectrum": {"$exists": True},
                                    "augmented": False,
                                    "severity": "0",
                                    "mode": mode_name
@@ -200,14 +229,16 @@ def get_trained_on_specific_failure_mode():
 
         # Augmented data
         all_augmented_modes = [pickle.loads(doc["envelope_spectrum"])["mag"] for doc in
-                               augmented.find({"envelope_spectrum": {"$exists": True},
-                                               "severity": "9",  # Using the maximum severity only during training
+                               db["augmented"].find({"envelope_spectrum": {"$exists": True},
+                                               "severity": max_severity,  # Using the maximum severity only during training
                                                "mode": mode_name,
                                                "augmented": True})]
+        # print("all augmented",len(all_augmented_modes))
 
         all_augmented_modes = limit_frequency_components(
             np.vstack(all_augmented_modes))  # Using all of the healthy data from all "modes" (even though healthy
         # print(all_augmented_modes[0].shape)
+
         augmented_and_healthy_train = np.vstack([healthy_train, all_augmented_modes])
 
         # # Train the models
@@ -217,24 +248,26 @@ def get_trained_on_specific_failure_mode():
 
 
 def main():
+    from database_definitions import raw, processed, augmented, encoding # Delete this and define locally to allow for parallel operations.
+
     processed.delete_many({})
     augmented.delete_many({})
     encoding.delete_many({})
 
     # Process the time data
     query = {"time_series": {"$exists": True}}
-    new_derived_doc(query, raw, processed, compute_features_from_time_series_doc)
+    new_derived_doc(query, "raw", "processed", compute_features_from_time_series_doc)
 
     # Compute augmented data
     query = {"envelope_spectrum": {"$exists": True}}
-    new_derived_doc(query, processed, augmented, compute_augmentation_from_feature_doc)
+    new_derived_doc(query, "processed", "augmented", compute_augmentation_from_feature_doc)
 
-    # Apply encoding for both augmented and not augmented data
+    # # Apply encoding for both augmented and not augmented data
     query = {"augmented": True}
-    new_derived_doc(query, augmented, encoding, compute_encoding_from_doc)
-
+    new_derived_doc(query, "augmented", "encoding", compute_encoding_from_doc)
+    #
     query = {"augmented": False, "envelope_spectrum": {"$exists": True}}
-    new_derived_doc(query, processed, encoding, compute_encoding_from_doc)
+    new_derived_doc(query, "processed", "encoding", compute_encoding_from_doc)
 
 
 if __name__ == "__main__":

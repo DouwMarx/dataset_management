@@ -3,8 +3,9 @@ from multiprocessing import Pool
 import time
 from database_definitions import make_new_client
 
+# Goal is to read and write from db in parallel
 
-
+glob_client = MongoClient()
 
 def process(a, b):
     new_doc = {
@@ -17,6 +18,7 @@ def process(a, b):
 
     client, db, raw, processed, augmented, encoding, metrics = make_new_client()
     a = raw.find_one({})
+    # a = glob_raw.find_one({})
     print(a["mode"])
 
 

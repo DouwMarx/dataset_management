@@ -7,6 +7,8 @@ import pickle
 from sklearn.metrics import roc_curve, auc
 from dataset_management.phenomenological_model.update_database_with_processed import limit_frequency_components
 
+max_severity = augmented.distinct("severity")[-1]
+print("max sev", max_severity)
 
 def update_database_with_metrics():
     all_healthy_ses = [pickle.loads(proc["envelope_spectrum"])["mag"] for proc in processed.find(
@@ -78,7 +80,7 @@ def update_database_with_metrics():
             # Get an example of what we expect severe failure would look like for this failure mode
             severe_failure_augmented_encoding = encoding.find_one({
                 "augmented": True,
-                "severity": "9",
+                "severity": max_severity,
                 "mode": expected_mode,
                 "model_used": doc["model_used"],
             })
