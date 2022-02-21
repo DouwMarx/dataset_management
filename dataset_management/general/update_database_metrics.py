@@ -1,11 +1,9 @@
-from database_definitions import raw, processed, augmented, encoding, metrics
-import pickle
+from database_definitions import processed, augmented, encoding, metrics
 import numpy as np
-from definitions import data_dir
-from scipy.stats import ttest_ind, norm, multivariate_normal
+from scipy.stats import ttest_ind, norm
 import pickle
 from sklearn.metrics import roc_curve, auc
-from dataset_management.phenomenological_model.update_database_with_processed import limit_frequency_components
+from dataset_management.general.update_database_with_processed import limit_frequency_components
 
 max_severity = augmented.distinct("severity")[-1]
 print("max sev", max_severity)
