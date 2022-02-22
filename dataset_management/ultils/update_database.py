@@ -1,4 +1,3 @@
-
 from database_definitions import make_db
 
 def new_derived_doc(query, source_name, target_name, function_to_apply):
@@ -41,3 +40,4 @@ def new_derived_doc(query, source_name, target_name, function_to_apply):
 
     client.close()
     return target_collection
+
