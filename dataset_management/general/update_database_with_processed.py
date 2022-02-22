@@ -21,7 +21,7 @@ def limit_frequency_components(arr, fraction_of_spectrum_to_use=0.1):
     return arr[:, 1:use]
 
 
-def compute_features_from_time_series_doc(doc, db):
+def compute_features_from_time_series_doc(doc):
     signal = pickle.loads(doc["time_series"])  # Get time signal
     # Get sampling frequency
     meta_data = pickle.loads(doc["meta_data"])
@@ -41,6 +41,7 @@ def compute_features_from_time_series_doc(doc, db):
                          "augmented": doc["augmented"]
                          }
     computed_features = [envelope_time_series, envelope_spectrum]
+    print("now")
 
     return computed_features
 

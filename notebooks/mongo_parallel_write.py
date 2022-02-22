@@ -5,6 +5,8 @@ from multiprocessing import Pool
 
 processed.delete_many({})
 
+print("docs_start",processed.count_documents({}))
+
 source_collection = raw
 
 # Process the time data
@@ -19,11 +21,23 @@ parallel_process = compute_features_from_time_series_doc
 # the arguments for these function are doc and db : DB can be removed if we make a class of it?
 
 from database_definitions import db
-function_arguments = ((doc,db) for doc in source_collection.find(query))
+function_arguments = (doc for doc in source_collection.find(query))
 
 # for i in function_arguments:
 #     compute_features_from_time_series_doc(*i)
 #     print("i")
 
-pool = Pool()  # Create a multiprocessing Pool
-r = pool.starmap(parallel_process,function_arguments)
+# pool = Pool()  # Create a multiprocessing Pool
+# r = pool.map(parallel_process,function_arguments)
+
+from dataset_management.ultils import update_database
+
+o = update_database.DerivedDoc(query,"raw","processed",compute_features_from_time_series_doc)
+# r = o.parallel_do()
+# o.serial_do()
+
+o.update_database(parallel=True)
+
+from database_definitions import processed,raw
+print("done")
+print("docs_end",processed.count_documents({}))

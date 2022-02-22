@@ -1,9 +1,10 @@
 import pickle
 from augment_data.phenomenological_ses.make_phenomenological_ses import AugmentedSES
 from dataset_management.ultils.update_database import new_derived_doc
+from database_definitions import make_db
 
 
-def compute_augmentation_from_feature_doc(doc, db):
+def compute_augmentation_from_feature_doc(doc):
     """
     Augments healthy data towards a faulty state for a given failure mode.
 
@@ -17,6 +18,10 @@ def compute_augmentation_from_feature_doc(doc, db):
     -------
 
     """
+
+    # Instantiate a own database
+    db, client = make_db() # Depending on this input kwarg?, a different dataset could be selected.
+
     # TODO: The augmentation is currently envelope spectrum specific
 
     healthy_envelope_spectrum = db["processed"].find_one({"envelope_spectrum": {"$exists": True},

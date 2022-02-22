@@ -8,6 +8,7 @@ from dataset_management.general.update_database_with_processed import limit_freq
 max_severity = augmented.distinct("severity")[-1]
 print("max sev", max_severity)
 
+# TODO: Reformat this code to work with the existing framework where a function acs on a mongodb doc
 def update_database_with_metrics():
     all_healthy_ses = [pickle.loads(proc["envelope_spectrum"])["mag"] for proc in processed.find(
         {
