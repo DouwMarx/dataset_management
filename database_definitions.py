@@ -10,6 +10,7 @@ processed = db["processed"]
 augmented = db["augmented"]
 encoding = db["encoding"]
 metrics = db["metrics"]
+model = db["model"]
 
 
 def make_new_client():
