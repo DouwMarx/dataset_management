@@ -1,13 +1,5 @@
 import unittest
-from dataset_management.build_data_and_encodings import run_data_and_encoding_pipeline
 import numpy as np
-
-
-class TestBuildDataAndEncodings(unittest.TestCase):
-
-    def test_run_data_and_encoding_pipeline(self):
-        run_data_and_encoding_pipeline("data_generated_by_tests", quik_iter=True)
-
 
 class TestMongoDB(unittest.TestCase):
 
@@ -55,3 +47,6 @@ class TestFeaturesCompute(unittest.TestCase):
         docs = processed.find_one({})  # Check if there are any documents that are not time series
 
         self.assertTrue(docs is not None)
+
+if __name__ == '__main__':
+    unittest.main()

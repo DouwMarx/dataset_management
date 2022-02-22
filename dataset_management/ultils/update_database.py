@@ -18,10 +18,9 @@ def new_derived_doc(query, source_name, target_name, function_to_apply):
     cursor =  source_collection.find(query)
 
     # print(cursor.count())
-    if cursor.count() == 0:
+    # if cursor.count() == 0:
+    if source_collection.count_documents(query)==0:
         print("No examples match the query in the source database")
-
-
 
     for doc in source_collection.find(query):
         computed = function_to_apply(doc, db)  # TODO: Need keyword arguments to make this work. Or global variable?

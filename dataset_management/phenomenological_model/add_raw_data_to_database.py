@@ -1,4 +1,3 @@
-from dataset_management import build_data_and_encodings as bde
 import pickle
 from pypm.phenomenological_bearing_model.make_data import PyBearingDataset
 from database_definitions import raw, processed, augmented
@@ -39,17 +38,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
-# print(l)
-
-#
-# for doc in fd.find({"mode":"inner"}):
-#     print(doc["severity"])
-#     # return l
-
-# print(main())
-
-
-# # print(loaded_doc["meta_data"])
-# for i in failure_dataset.find():
-#     print(i["severity"])
