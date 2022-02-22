@@ -69,10 +69,11 @@ class DerivedDoc():
     def serial_do(self):
        return [self.process(arg) for arg in self.process_arguments]
 
-    def update_database(self,parallel = True):
+    def update_database(self, parallel = True):
         # TODO: It might be that the idea of not updating the database separately in each process, could lead to memmory issues.
         # An alternative would be to do the updates inside the parallel process.
 
+        docs_at_start = self.target_collection.count_documents({})
         t_start = time.time()
 
         if parallel:
@@ -85,4 +86,7 @@ class DerivedDoc():
 
         self.target_collection.insert_many(flattened)
 
+        docs_at_end = self.target_collection.count_documents({})
         print("Time elapsed applying {}: ".format(self.process.__name__), time.time() -t_start, "sec")
+        print("{} documents added".format(docs_at_end-docs_at_start))
+        print("")

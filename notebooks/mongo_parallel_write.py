@@ -33,8 +33,6 @@ function_arguments = (doc for doc in source_collection.find(query))
 from dataset_management.ultils import update_database
 
 o = update_database.DerivedDoc(query,"raw","processed",compute_features_from_time_series_doc)
-# r = o.parallel_do()
-# o.serial_do()
 
 o.update_database(parallel=True)
 
