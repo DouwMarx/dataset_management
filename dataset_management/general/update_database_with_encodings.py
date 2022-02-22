@@ -1,12 +1,16 @@
 
 import pickle
+
+from database_definitions import make_db
 from dataset_management.general.update_database_with_processed import limit_frequency_components
 from sklearn.decomposition import PCA
 import numpy as np
-from dataset_management.ultils.update_database import new_derived_doc
+from dataset_management.ultils.update_database import new_derived_doc, new_docs_from_computed, DerivedDoc
 
-def compute_encoding_from_doc(doc, db):
+
+def compute_encoding_from_doc(doc):
     # TODO: make sure encodings are computed for both real and augmented data
+    db,client = make_db()
     models = get_trained_models(db)
     # print("models",models[0],len(models))
     encodings_for_models = []
@@ -21,7 +25,9 @@ def compute_encoding_from_doc(doc, db):
              "reconstruction": pickle.dumps(reconstruction)
              }
         )
-    return encodings_for_models
+
+    new_docs = new_docs_from_computed(doc,encodings_for_models)  # Add the meta-data keys
+    return new_docs
 
 def get_trained_models(db):
     train_on_all_models = get_trained_models_train_on_all(db)
@@ -118,10 +124,10 @@ def main():
 
     # # Apply encoding for both augmented and not augmented data
     query = {"augmented": True}
-    new_derived_doc(query, "augmented", "encoding", compute_encoding_from_doc)
-    #
+    DerivedDoc(query, "augmented", "encoding", compute_encoding_from_doc).update_database(parallel=True)
+
     query = {"augmented": False, "envelope_spectrum": {"$exists": True}}
-    new_derived_doc(query, "processed", "encoding", compute_encoding_from_doc)
+    DerivedDoc(query, "processed", "encoding", compute_encoding_from_doc).update_database(parallel=True)
 
     return encoding
 

@@ -8,13 +8,14 @@ from dataset_management.general.update_database_with_processed import limit_freq
 max_severity = augmented.distinct("severity")[-1]
 print("max sev", max_severity)
 
+
 # TODO: Reformat this code to work with the existing framework where a function acs on a mongodb doc
 def update_database_with_metrics():
     all_healthy_ses = [pickle.loads(proc["envelope_spectrum"])["mag"] for proc in processed.find(
         {
-        "severity": "0",
-        "envelope_spectrum": {"$exists": True},
-        "augmented": False}
+            "severity": "0",
+            "envelope_spectrum": {"$exists": True},
+            "augmented": False}
     )]
     all_healthy_ses = limit_frequency_components(np.vstack(all_healthy_ses))
 
@@ -38,13 +39,13 @@ def update_database_with_metrics():
 
         measured_ses = processed.find_one(
             {
-            "severity": doc["severity"],
-            "mode": doc["mode"],
-            "envelope_spectrum": {"$exists": True},
-            "augmented": False
+                "severity": doc["severity"],
+                "mode": doc["mode"],
+                "envelope_spectrum": {"$exists": True},
+                "augmented": False
             }
         )
-        measured_ses =limit_frequency_components(pickle.loads(measured_ses["envelope_spectrum"])["mag"])
+        measured_ses = limit_frequency_components(pickle.loads(measured_ses["envelope_spectrum"])["mag"])
 
         measured_encoding = pickle.loads(doc["encoding"])
         measured_reconstruction = pickle.loads(doc["reconstruction"])
@@ -62,7 +63,7 @@ def update_database_with_metrics():
                             np.zeros(np.shape(healthy_reconstruction_error))])
 
         # Compute AUC from the ROC
-        fpr, tpr, threash = roc_curve(labels, np.e**-reconstruction_errors, pos_label=0)
+        fpr, tpr, threash = roc_curve(labels, np.e ** -reconstruction_errors, pos_label=0)
         auc_score = auc(fpr, tpr)
         metrics_dict = {"severity": doc["severity"],
                         "mode": doc["mode"],

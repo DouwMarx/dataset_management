@@ -52,7 +52,7 @@ def main():
 
     # Process the time data
     query = {"time_series": {"$exists": True}}
-    DerivedDoc(query, "raw", "processed", compute_features_from_time_series_doc).update_database(parallel=False)
+    DerivedDoc(query, "raw", "processed", compute_features_from_time_series_doc).update_database(parallel=True)
 
     return processed
 
