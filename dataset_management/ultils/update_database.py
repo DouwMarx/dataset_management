@@ -63,13 +63,12 @@ class DerivedDoc():
     def parallel_do(self):
         pool = Pool()
         result = pool.map(self.process, self.process_arguments)
-        print(len(result))
         return result
 
     def serial_do(self):
-       return [self.process(arg) for arg in self.process_arguments]
+        return [self.process(arg) for arg in self.process_arguments]
 
-    def update_database(self, parallel = True):
+    def update_database(self, parallel=True):
         # TODO: It might be that the idea of not updating the database separately in each process, could lead to memmory issues.
         # An alternative would be to do the updates inside the parallel process.
 
@@ -83,10 +82,35 @@ class DerivedDoc():
 
         # This will be a list of list (of documents). We flatten them to insert them into the database
         flattened = itertools.chain.from_iterable(result)
+        # flattened = result
 
         self.target_collection.insert_many(flattened)
 
         docs_at_end = self.target_collection.count_documents({})
-        print("Time elapsed applying {}: ".format(self.process.__name__), time.time() -t_start, "sec")
-        print("{} documents added".format(docs_at_end-docs_at_start))
+        print("Time elapsed applying {}: ".format(self.process.__name__), time.time() - t_start, "sec")
+        print("Parallel :{}".format(str(parallel)))
+        print("{} documents added".format(docs_at_end - docs_at_start))
         print("")
+
+
+def new_docs_from_computed(doc, list_of_computed_dicts):
+    # Transfer some of information from the source document
+
+    updated_dicts = []
+    for computed_dict in list_of_computed_dicts:
+        # new_doc = {"mode": doc["mode"],
+        #            "severity": doc["severity"],
+        #            "meta_data": doc["meta_data"],
+        #            "augmented": doc["augmented"]
+        #            }
+
+        to_transfer = ["mode", "severity", "meta_data", "augmented"]
+
+        new_doc = {key: doc[key] for key in to_transfer}
+        # new_doc = doc["mode", "severity"]
+
+        new_doc.update(computed_dict)  # Add the newly computed data to a document containing the original meta data
+        updated_dicts.append(new_doc)
+    return updated_dicts
+
+# return [new_doc.copy().update(computed_dict) for computed_dict in list_of_computed_dicts]

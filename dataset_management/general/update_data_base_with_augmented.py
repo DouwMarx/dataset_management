@@ -1,7 +1,7 @@
 import pickle
 from augment_data.phenomenological_ses.make_phenomenological_ses import AugmentedSES
-from dataset_management.ultils.update_database import new_derived_doc
 from database_definitions import make_db
+from dataset_management.ultils.update_database import DerivedDoc, new_docs_from_computed
 
 
 def compute_augmentation_from_feature_doc(doc):
@@ -48,10 +48,13 @@ def compute_augmentation_from_feature_doc(doc):
 
     envelope_spectrum = ases.get_augmented_ses()
 
-    return [{"envelope_spectrum": pickle.dumps({"freq": ases.frequencies,
+    computed = [{"envelope_spectrum": pickle.dumps({"freq": ases.frequencies,
                                                 "mag": envelope_spectrum}),
              "augmented": True,
              "augmentation_meta_data": {"this": "that"}}]
+
+    new_docs = new_docs_from_computed(doc,computed)
+    return new_docs
 
 
 def main():
@@ -61,7 +64,7 @@ def main():
 
     # Compute augmented data
     query = {"envelope_spectrum": {"$exists": True}}
-    new_derived_doc(query, "processed", "augmented", compute_augmentation_from_feature_doc)
+    DerivedDoc(query, "processed", "augmented", compute_augmentation_from_feature_doc).update_database(parallel=False)
 
     return augmented
 

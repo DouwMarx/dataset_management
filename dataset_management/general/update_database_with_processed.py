@@ -1,6 +1,6 @@
 from signal_processing.spectra import env_spec, envelope
 import pickle
-from dataset_management.ultils.update_database import DerivedDoc
+from dataset_management.ultils.update_database import DerivedDoc,new_docs_from_computed
 
 
 def limit_frequency_components(arr, fraction_of_spectrum_to_use=0.1):
@@ -41,7 +41,9 @@ def compute_features_from_time_series_doc(doc):
                          "augmented": doc["augmented"]
                          }
     computed_features = [envelope_time_series, envelope_spectrum]
-    return computed_features
+
+    new_docs = new_docs_from_computed(doc,computed_features)
+    return new_docs
 
 
 def main():
@@ -50,7 +52,7 @@ def main():
 
     # Process the time data
     query = {"time_series": {"$exists": True}}
-    DerivedDoc(query, "raw", "processed", compute_features_from_time_series_doc).update_database(parallel=True)
+    DerivedDoc(query, "raw", "processed", compute_features_from_time_series_doc).update_database(parallel=False)
 
     return processed
 
