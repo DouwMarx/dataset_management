@@ -36,7 +36,12 @@ class Encoding():
     def compute_encoding_from_doc(self,doc):
         encodings_for_models = []
         for model in self.db["model"].find(self.model_query):
-            model_object = torch.load(model["path"])
+            if model["implementation"] == "torch":
+                model_object = torch.load(model["path"])
+            else:
+                with open(model["path"], 'rb') as f:
+                    model_object = pickle.load(f)
+
             data = torch.from_numpy(pickle.loads(doc["envelope_spectrum"])["mag"]).float()
             # limit_frequency_components(data)
             encoding = model_object.encoder(data)
@@ -61,7 +66,7 @@ def main():
     encoding.delete_many({})
 
     #PCA using Sklearn
-    # # Apply encoding for both augmented and not augmented data
+    # Apply encoding for both augmented and not augmented data
     # query = {"augmented": True}
     # DerivedDoc(query, "augmented", "encoding", compute_encoding_from_doc).update_database(parallel=False)
 
@@ -69,7 +74,8 @@ def main():
     # DerivedDoc(query, "processed", "encoding", compute_encoding_from_doc).update_database(parallel=True)
 
     # Using Pytorch model
-    models_to_use_query = {} # Currently using all available models
+
+    models_to_use_query = {"implementation":"sklearn"} # Currently using all available models
     derived_doc_func = Encoding(models_to_use_query).compute_encoding_from_doc
     query = {"augmented": False, "envelope_spectrum": {"$exists": True}}
     DerivedDoc(query, "processed", "encoding", derived_doc_func).update_database(parallel=False)

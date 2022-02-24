@@ -4,6 +4,8 @@ from database_definitions import db
 from dataset_management.ultils.save_trained_models import save_trained_model
 
 models = [PCAHealthyOnly(),PCAHealthyAndAugmented()] + [PCAHealthyAndMode(mode) for mode in ["ball","outer","inner"]]
+# models = [PCAHealthyAndMode("ball")]
+
 
 print(models[0].encoder)
 
