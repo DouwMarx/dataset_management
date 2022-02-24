@@ -35,7 +35,7 @@ class TestAugment(unittest.TestCase):
 class TestModel(unittest.TestCase):
 
     def test_build_trained_models(self):
-        from dataset_management.general.update_database_with_models import main
+        from dataset_management.general.update_database_with_sklearn_models import main
         r = main()
         self.assertTrue(r.find_one({}) is not None)
 

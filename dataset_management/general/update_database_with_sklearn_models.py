@@ -18,8 +18,9 @@ def add_models_to_database():
     trained_models = get_trained_models(db)
     print(len(trained_models))
     for model in trained_models:
-        doc = {"model_object":pickle.dumps(model),
-               "model_name":model.name}
+        doc = {"trained_object": pickle.dumps(model),
+               "name": model.name,
+               "implementation": "sklearn"}
 
         db["model"].insert_one(doc)
 
