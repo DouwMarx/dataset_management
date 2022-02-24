@@ -65,20 +65,12 @@ def main():
     from database_definitions import encoding
     encoding.delete_many({})
 
-    #PCA using Sklearn
-    # Apply encoding for both augmented and not augmented data
-    # query = {"augmented": True}
-    # DerivedDoc(query, "augmented", "encoding", compute_encoding_from_doc).update_database(parallel=False)
+    for augmented,source in zip([False,True],["processed","augmented"]):
 
-    # query = {"augmented": False, "envelope_spectrum": {"$exists": True}}
-    # DerivedDoc(query, "processed", "encoding", compute_encoding_from_doc).update_database(parallel=True)
-
-    # Using Pytorch model
-
-    models_to_use_query = {"implementation":"sklearn"} # Currently using all available models
-    derived_doc_func = Encoding(models_to_use_query).compute_encoding_from_doc
-    query = {"augmented": False, "envelope_spectrum": {"$exists": True}}
-    DerivedDoc(query, "processed", "encoding", derived_doc_func).update_database(parallel=False)
+        models_to_use_query = {}#{"implementation":"sklearn"} # Currently using all available models
+        derived_doc_func = Encoding(models_to_use_query).compute_encoding_from_doc
+        query = {"augmented": augmented, "envelope_spectrum": {"$exists": True}}
+        DerivedDoc(query, source, "encoding", derived_doc_func).update_database(parallel=False)
 
     return encoding
 #
