@@ -29,31 +29,24 @@ def compute_encoding_from_doc(doc):
 class Encoding():
     def __init__(self,model_query):
         self.db, self.client = make_db()
+        self.model_query = model_query
 
         print("Computing encodings for {} models".format(self.db["model"].count_documents(model_query)))
 
-        models = []
-        # Load the models from disk
-        for model in self.db["model"].find(model_query):
-            print(model["path"])
-            loaded_model_object = torch.load(model["path"])
-            # loaded_model_object = pickle.load(model["path"])
-            models.append(loaded_model_object)
-
-        self.models = models
-
     def compute_encoding_from_doc(self,doc):
         encodings_for_models = []
-        for model in self.models:
+        for model in self.db["model"].find(self.model_query):
+            model_object = torch.load(model["path"])
             data = torch.from_numpy(pickle.loads(doc["envelope_spectrum"])["mag"]).float()
             # limit_frequency_components(data)
-            encoding = model.encoder(data)
+            encoding = model_object.encoder(data)
 
-            reconstruction = model.decoder(encoding)
+            reconstruction = model_object.decoder(encoding)
 
             encodings_for_models.append(
                 {"encoding": pickle.dumps(encoding.detach().numpy()),
-                 "model_used": "thismodel",
+                 "name": model["name"],
+                 "short_description": model["short_description"],
                  "reconstruction": pickle.dumps(reconstruction.detach().numpy())
                  }
             )
