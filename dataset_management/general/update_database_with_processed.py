@@ -34,9 +34,10 @@ def compute_features_from_time_series_doc(doc):
     envelope_time_series = {"envelope_time_series": pickle.dumps(env),
                             "augmented": doc["augmented"]
                             }
-    envelope_spectrum = {"envelope_spectrum": pickle.dumps({"freq": freq,
-                                                            "mag": mag,
-                                                            "phase": phase
+    # Important: Notice that the DC gain is removed here
+    envelope_spectrum = {"envelope_spectrum": pickle.dumps({"freq": limit_frequency_components(freq.reshape(-1,1)),
+                                                            "mag": limit_frequency_components(mag),
+                                                            "phase": limit_frequency_components(phase.reshape(-1,1))
                                                             }),
                          "augmented": doc["augmented"]
                          }

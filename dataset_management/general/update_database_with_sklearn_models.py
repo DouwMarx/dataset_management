@@ -1,7 +1,6 @@
 from sklearn.decomposition import PCA
 import numpy as np
 import pickle
-from dataset_management.general.update_database_with_processed import limit_frequency_components
 from database_definitions import make_db
 
 
@@ -43,15 +42,15 @@ def get_trained_models_train_on_all(db):
                    db["processed"].find({"envelope_spectrum": {"$exists": True},
                                          "augmented": False,
                                          "severity": "0"})]
-    healthy_train = limit_frequency_components(np.vstack(
-        all_healthy))  # Healthy data from different "modes" even though modes don't technically exist when healthy
+    healthy_train = np.vstack(
+        all_healthy)  # Healthy data from different "modes" even though modes don't technically exist when healthy
 
     # # Healthy and augmented data
     all_augmented_modes = [pickle.loads(doc["envelope_spectrum"])["mag"] for doc in
                            db["augmented"].find({"envelope_spectrum": {"$exists": True},
                                                  "severity": max_severity,
                                                  "augmented": True})]
-    augmented_and_healthy_train = limit_frequency_components(np.vstack(all_healthy + all_augmented_modes))
+    augmented_and_healthy_train = np.vstack(all_healthy + all_augmented_modes)
 
     # Train the models
     model_healthy_only.fit(healthy_train)
@@ -85,8 +84,7 @@ def get_trained_on_specific_failure_mode(db):
                                          "severity": "0",
                                          "mode": mode_name
                                          })]
-        healthy_train = limit_frequency_components(
-            np.vstack(healthy))  # Using all of the healthy data from all "modes" (even though healthy
+        healthy_train = np.vstack(healthy)  # Using all of the healthy data from all "modes" (even though healthy
 
         # Augmented data
         all_augmented_modes = [pickle.loads(doc["envelope_spectrum"])["mag"] for doc in
@@ -96,8 +94,7 @@ def get_trained_on_specific_failure_mode(db):
                                                      "augmented": True})]
         # print("all augmented",len(all_augmented_modes))
 
-        all_augmented_modes = limit_frequency_components(
-            np.vstack(all_augmented_modes))  # Using all of the healthy data from all "modes" (even though healthy
+        all_augmented_modes = np.vstack(all_augmented_modes)  # Using all of the healthy data from all "modes" (even though healthy
         # print(all_augmented_modes[0].shape)
 
         augmented_and_healthy_train = np.vstack([healthy_train, all_augmented_modes])

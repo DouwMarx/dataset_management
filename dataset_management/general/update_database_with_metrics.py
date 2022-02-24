@@ -3,7 +3,6 @@ import numpy as np
 from scipy.stats import ttest_ind, norm
 import pickle
 from sklearn.metrics import roc_curve, auc
-from dataset_management.general.update_database_with_processed import limit_frequency_components
 from dataset_management.ultils.update_database import DerivedDoc
 
 db,client = make_db()
@@ -44,7 +43,7 @@ def compute_metrics_from_doc(doc):
             "envelope_spectrum": {"$exists": True},
             "augmented": False}
     )]
-    all_healthy_ses = limit_frequency_components(np.vstack(all_healthy_ses)) # TODO: This gathering of heatlhy data is probably expensive, might later be replaced with healthy test data
+    all_healthy_ses = np.vstack(all_healthy_ses) # TODO: This gathering of heatlhy data is probably expensive, might later be replaced with healthy test data
 
     # Previous location of for loop
 
@@ -72,7 +71,7 @@ def compute_metrics_from_doc(doc):
             "augmented": False
         }
     )
-    measured_ses = limit_frequency_components(pickle.loads(measured_ses["envelope_spectrum"])["mag"])
+    measured_ses = pickle.loads(measured_ses["envelope_spectrum"])["mag"]
 
     measured_encoding = pickle.loads(doc["encoding"])
     measured_reconstruction = pickle.loads(doc["reconstruction"])
