@@ -47,13 +47,12 @@ class TestEncode(unittest.TestCase):
         self.assertTrue(r.find_one({}) is not None)
 
 
-class TestFeaturesCompute(unittest.TestCase):
+class TestMetrics(unittest.TestCase):
+    def test_metrics(self):
+        from dataset_management.general.update_database_with_metrics import main
+        r = main()
+        self.assertTrue(r.find_one({}) is not None)
 
-    def test_update_database_with_computed_features(self):
-        from database_definitions import processed
-        docs = processed.find_one({})  # Check if there are any documents that are not time series
-
-        self.assertTrue(docs is not None)
 
 if __name__ == '__main__':
     unittest.main()

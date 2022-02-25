@@ -27,9 +27,9 @@ t_start = time()
 main_enc()
 print("Encodings computed in :", time()-t_start)
 
-t_start = time()
-main_metric()
-print("metric data updated in :", time()-t_start)
+# t_start = time()
+# main_metric()
+# print("metric data updated in :", time()-t_start)
 
 
 

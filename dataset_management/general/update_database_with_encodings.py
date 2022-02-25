@@ -29,7 +29,7 @@ class Encoding():
             encodings_for_models.append(
                 {"encoding": pickle.dumps(encoding.detach().numpy()),
                  "model_used": model["name"],
-                 "short_description": model["short_description"],
+                 "model_description": model["short_description"],
                  "reconstruction": pickle.dumps(reconstruction.detach().numpy())
                  }
             )

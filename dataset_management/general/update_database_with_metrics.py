@@ -77,9 +77,9 @@ def compute_metrics_from_doc(doc):
     measured_reconstruction = pickle.loads(doc["reconstruction"])
 
     # RECONSTRUCTION Metrics
-    # stat, p = ttest_ind(healthy_projection, measured_projection)
-    healthy_reconstruction_error = np.linalg.norm(all_healthy_ses - all_healthy_reconstruction, axis=1)
-    sample_reconstruction_error = np.linalg.norm(measured_ses - measured_reconstruction, axis=1)
+    # TODO: Fix problems with reconstruction error
+    healthy_reconstruction_error = 1 #np.linalg.norm(all_healthy_ses - all_healthy_reconstruction, axis=1)
+    sample_reconstruction_error = 1 #np.linalg.norm(measured_ses - measured_reconstruction, axis=1)
 
     # # Compute likelihoods given the distribution
     # likelihoods = np.hstack([sample_likelihood_measured, sample_likelihood_healthy])
@@ -152,6 +152,8 @@ def main():
     # Compute the metrics
     query = {"augmented": False}
     DerivedDoc(query, "encoding", "metrics", compute_metrics_from_doc).update_database(parallel=True)
+
+    return metrics
 
 if __name__ == "__main__":
     r = main()
