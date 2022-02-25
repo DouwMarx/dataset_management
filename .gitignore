@@ -145,6 +145,7 @@ cython_debug/
 # Data
 *.npy
 *.pkl
+*.pt
 
 # html plots
 *.html

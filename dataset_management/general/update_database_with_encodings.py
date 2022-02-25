@@ -4,28 +4,6 @@ from dataset_management.ultils.update_database import new_derived_doc, new_docs_
 import torch
 
 
-def compute_encoding_from_doc(doc):
-    # TODO: make sure encodings are computed for both real and augmented data
-    # TODO: Make sure used for computing the encoding can be selected
-    db,client = make_db()
-    models = [pickle.loads(doc["trained_object"]) for doc in db["model"].find()]
-    # print("models",models[0],len(models))
-    encodings_for_models = []
-    for model in models:
-        encoding = model.transform(pickle.loads(doc["envelope_spectrum"])["mag"])
-
-        reconstruction = model.inverse_transform(encoding)
-
-        encodings_for_models.append(
-            {"encoding": pickle.dumps(encoding),
-             "model_used": model.name,
-             "reconstruction": pickle.dumps(reconstruction)
-             }
-        )
-
-    new_docs = new_docs_from_computed(doc,encodings_for_models)  # Add the meta-data keys
-    return new_docs
-
 class Encoding():
     def __init__(self,model_query):
         self.db, self.client = make_db()
@@ -50,7 +28,7 @@ class Encoding():
 
             encodings_for_models.append(
                 {"encoding": pickle.dumps(encoding.detach().numpy()),
-                 "name": model["name"],
+                 "model_used": model["name"],
                  "short_description": model["short_description"],
                  "reconstruction": pickle.dumps(reconstruction.detach().numpy())
                  }
