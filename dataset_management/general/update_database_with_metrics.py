@@ -58,30 +58,6 @@ def compute_reconstruction_errors(doc):
     measured_reconstruction = pickle.loads(doc["reconstruction"])
 
 
-def compute_auc_for_metric(doc):
-    # RECONSTRUCTION Metrics
-    # TODO: Fix problems with reconstruction error
-    healthy_reconstruction_error = 1  # np.linalg.norm(all_healthy_ses - all_healthy_reconstruction, axis=1)
-    sample_reconstruction_error = 1  # np.linalg.norm(measured_ses - measured_reconstruction, axis=1)
-
-    # # Compute likelihoods given the distribution
-    # likelihoods = np.hstack([sample_likelihood_measured, sample_likelihood_healthy])
-    reconstruction_errors = np.hstack([sample_reconstruction_error, healthy_reconstruction_error])
-
-    labels = np.hstack([np.ones(np.shape(sample_reconstruction_error)),
-                        np.zeros(np.shape(healthy_reconstruction_error))])
-
-    # Compute AUC from the ROC
-    fpr, tpr, threash = roc_curve(labels, np.e ** -reconstruction_errors, pos_label=0)
-    auc_score = auc(fpr, tpr)
-    metrics_dict = {"severity": doc["severity"],
-                    "mode": doc["mode"],
-                    "expected_mode": doc["mode"],
-                    "model_used": doc["model_used"],
-                    "auc_reconstruct": auc_score
-                    }
-    return metrics_dict
-
 
 class EncodingMovementMetrics(object):
     def __init__(self, model_used):

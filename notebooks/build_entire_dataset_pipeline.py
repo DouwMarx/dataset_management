@@ -5,19 +5,21 @@ from dataset_management.general.update_database_with_encodings import main as ma
 from dataset_management.general.update_database_with_models import main as main_model
 from dataset_management.general.update_database_with_metrics import main as main_metric
 
+# from informed_anomaly_detection.visualisation import plots for proof of concept # TODO do the import to automate
+
 from time import time
 
-t_start = time()
-main_raw()
-print("raw data generated in :", time()-t_start)
+# t_start = time()
+# main_raw()
+# print("raw data generated in :", time()-t_start)
 
-t_start = time()
-main_proc()
-print("processed data updated in :", time()-t_start)
-
-t_start = time()
-main_aug()
-print("augmented data updated in :", time()-t_start)
+# t_start = time()
+# main_proc()
+# print("processed data updated in :", time()-t_start)
+#
+# t_start = time()
+# main_aug()
+# print("augmented data updated in :", time()-t_start)
 
 t_start = time()
 main_model()
