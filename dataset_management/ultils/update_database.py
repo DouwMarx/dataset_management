@@ -82,7 +82,6 @@ class DerivedDoc():
 
         # This will be a list of list (of documents). We flatten them to insert them into the database
         flattened = itertools.chain.from_iterable(result)
-        # flattened = result
 
         self.target_collection.insert_many(flattened)
 
