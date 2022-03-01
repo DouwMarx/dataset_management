@@ -1,13 +1,11 @@
 # Usefull snippets from kaggle page https://www.kaggle.com/furkancitil/nasa-bearing-dataset-rul-predictionk
 import pickle
-
 import numpy as np
 import pandas as pd
 import os
-
 from file_definitions import ims_path
-
 from database_definitions import db_ims
+from pypm.phenomenological_bearing_model.bearing_model import Bearing
 
 
 
@@ -23,6 +21,7 @@ class IMSTest(object):
 
         self.number_of_measurements = len(list(ims_path.joinpath(self.folder_name).glob('**/*')))
 
+        self.rotation_frequency = 2000/60 # rev/s  , Hz
 
 
         if rapid_for_test:
@@ -33,21 +32,46 @@ class IMSTest(object):
         self.n_samples_per_measurement = 20480
         self.data_per_channel = [np.zeros([self.number_of_measurements, self.n_samples_per_measurement]) for channel in channel_info] # Create an empty array for each dataset
 
-        bearing_geometry = {'d': 8.4,
-        'D': 71.5,
-        'n_ball': 16,
-        'contact_angle': 0.2740166925631097,
-        'sampling_frequency': 10000,
-        't_duration': 1,
-        'n_measurements': 100,
-        'speed_profile_type': 'constant',
-        'derived': {'geometry_factor': 4.201512427465972,
-                    'average_fault_frequency': 35.01260356221636},
-        'measured_time': [1]}
-
-        self.meta_data = bearing_geometry
-
         self.read_files() # Read the files into memory
+
+    def ims_bearing_meta_data(self,channel_id):
+        """
+        Bearing geometry for the Rexnord ZA-2115 bearing is is from the following paper:
+
+        https: // www.researchgate.net / publication / 335937388_Health_Indicator_Construction_Based_on_MD - CUMSUM_with_Multi - Domain_Features_Selection_for_Rolling_Element_Bearing_Fault_Diagnosis
+
+        """
+        mode_for_channel = self.channel_info[channel_id]["mode"]
+
+        d = 8.4
+        D = 71.5
+        n_ball = 16
+        contact_angle = 0.2647664475275398
+
+        bearing_obj = Bearing(d,D,contact_angle,n_ball)
+        print(mode_for_channel)
+        if mode_for_channel is not None:
+            geometry_factor_for_mode = bearing_obj.get_geometry_parameter(mode_for_channel)
+            average_fault_freq = self.rotation_frequency * geometry_factor_for_mode / (2 * np.pi)
+        else:
+            geometry_factor_for_mode = None
+            average_fault_freq = None
+
+        bearing_geometry = {'d': d,
+                            'D': D,
+                            'n_ball': n_ball,
+                            'contact_angle': contact_angle,
+                            'sampling_frequency': 20000,
+                            # 't_duration': 1,
+                            # 'n_measurements': 100,
+                            'derived': {
+                                'geometry_factor': geometry_factor_for_mode,
+                                'average_fault_frequency': average_fault_freq
+                                        },
+                            'measured_time': [1]
+                            }
+
+
 
     def read_files(self):
         # for measurement_id, filepath in enumerate(list(self.measurement_paths)[0:10]):  # For developement
@@ -70,7 +94,6 @@ class IMSTest(object):
         sev_groups_healthy = np.array([healthy_start])
         sev_groups_damaged = np.linspace(healthy_end, self.number_of_measurements, self.n_sev, dtype=int,endpoint=False)
         sev_groups = np.hstack([sev_groups_healthy,sev_groups_damaged])
-        print(sev_groups)
 
         data_for_severities = np.split(data_for_channel, sev_groups) # split data into groups with similar severity
         data_for_severities = data_for_severities[1:] # discard any data before the healthy region (run in)
@@ -83,11 +106,13 @@ class IMSTest(object):
 
         data_for_severities = self.split_channel_into_severities(healthy_records, channel_id)
 
+        meta_data = self.ims_bearing_meta_data(channel_id)
+
         docs_for_channel = []
         for severity,time_series_data in enumerate(data_for_severities):
             doc = {"mode": info_for_channel["mode"] ,
                    "severity": str(severity),
-                   "meta_data": self.meta_data,
+                   "meta_data": meta_data,
                    "time_series": pickle.dumps(time_series_data),
                    "augmented": False,
                    "ims_test_number":self.folder_name[0]
@@ -164,5 +189,6 @@ def main():
     return test1
 
 if __name__ == "__main__":
-    main()
+    t = main()
+    t.create_documents_for_channel(6)
 
