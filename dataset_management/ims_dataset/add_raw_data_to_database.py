@@ -9,13 +9,10 @@ from file_definitions import ims_path
 
 from database_definitions import db_ims
 
-folders_for_different_tests = ["1st_test", "2nd_test", "3rd_test/txt"]  # Each folder has text files with the data
-
-folder = folders_for_different_tests[2]
 
 
 class IMSTest(object):
-    def __init__(self, folder_name, channel_info, n_sev = 10):
+    def __init__(self, folder_name, channel_info, n_sev = 10,rapid_for_test = False):
 
 
         self.folder_name = folder_name
@@ -25,7 +22,13 @@ class IMSTest(object):
         self.n_sev = n_sev
 
         self.number_of_measurements = len(list(ims_path.joinpath(self.folder_name).glob('**/*')))
-        self.measurement_paths = list(ims_path.joinpath(self.folder_name).glob('**/*'))[0:10]
+
+
+
+        if rapid_for_test:
+            self.measurement_paths = list(ims_path.joinpath(self.folder_name).glob('**/*'))[0:10] # Only load a few of the samples when testing
+        else:
+            self.measurement_paths = list(ims_path.joinpath(self.folder_name).glob('**/*'))
 
         self.n_samples_per_measurement = 20480
         self.data_per_channel = [np.zeros([self.number_of_measurements, self.n_samples_per_measurement]) for channel in channel_info] # Create an empty array for each dataset
@@ -151,6 +154,15 @@ channel_info_test_1 = [
     },
 ]
 
-test1 = IMSTest(folders_for_different_tests[0], channel_info_test_1,n_sev=25)
-test1.add_to_database()
+folders_for_different_tests = ["1st_test", "2nd_test", "3rd_test/txt"]  # Each folder has text files with the data
+folder = folders_for_different_tests[2]
+# test1 = IMSTest(folders_for_different_tests[0], channel_info_test_1,n_sev=25)
+# test1.add_to_database()
+
+def main():
+    test1 = IMSTest(folders_for_different_tests[0], channel_info_test_1, n_sev=25,rapid_for_test=True)
+    return test1
+
+if __name__ == "__main__":
+    main()
 

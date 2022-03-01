@@ -16,6 +16,12 @@ class TestPhenomenologicalDataBase(unittest.TestCase):
         result_len, n_severities = main()
         self.assertEqual(result_len, n_severities)
 
+class TestIMSDataBase(unittest.TestCase):
+
+    def test_build_ims_database(self):
+        from dataset_management.ims_dataset.add_raw_data_to_database import main
+        r = main()
+
 
 class TestProcessed(unittest.TestCase):
 

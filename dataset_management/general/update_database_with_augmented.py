@@ -48,9 +48,6 @@ def compute_augmentation_from_feature_doc(doc):
     damaged_envelope_spectrum = pickle.loads(maximal_damage_for_mode["envelope_spectrum"])["mag"]
     max_amplitude = np.max(damaged_envelope_spectrum)
 
-    print("mode",doc["mode"],"max amp",max_amplitude)
-
-
     ases = AugmentedSES(healthy_ses=healthy_envelope_spectrum_mag,
                         healthy_ses_freq= healthy_envelope_spectrum_freq,
                         fs=fs,
