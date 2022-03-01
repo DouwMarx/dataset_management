@@ -5,6 +5,8 @@ client = MongoClient()
 
 db = client.phenomenological_rapid
 
+db_ims = client.ims
+
 raw = db["raw"]
 processed = db["processed"]
 augmented = db["augmented"]
