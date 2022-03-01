@@ -5,3 +5,6 @@ root_dir = Path(__file__).parent # Project Root dir
 models_dir = root_dir.joinpath('models') # Data dir
 # reports_dir = root_dir.joinpath('reports') # Data dir
 # plots_dir = reports_dir.joinpath('plots') # Data dir
+
+
+ims_path = Path("/home/douwm/data/IMS")
