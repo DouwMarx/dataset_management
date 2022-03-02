@@ -5,14 +5,8 @@ import pickle
 from sklearn.metrics import roc_curve, auc
 from dataset_management.ultils.update_database import DerivedDoc, new_docs_from_computed
 
-db, client = make_db()
-# max_severity = db['augmented'].distinct("severity")[-1]
-# print("max sev", max_severity)
-# client.close()
-
-
-def get_all_healthy_data(doc):
-    db, client = make_db()
+def get_all_healthy_data(doc, db_to_act_on):
+    db, client = make_db(db_to_act_on)
     dict_list = []
 
     all_healthy_ses = [pickle.loads(proc["envelope_spectrum"])["mag"] for proc in db["processed"].find(
@@ -35,41 +29,42 @@ def get_all_healthy_data(doc):
     healthy_encoding_mean = np.mean(all_healthy_encoding, axis=0)
 
 
-def compute_reconstruction_errors(doc):
-    all_healthy_reconstruction = [pickle.loads(enc["reconstruction"]) for enc in db["encoding"].find(
-        {
-            "model_used": doc["model_used"],
-            "severity": "0",
-            "augmented": False,
-        })]
-    all_healthy_reconstruction = np.vstack(all_healthy_reconstruction)
-
-    measured_ses = db["processed"].find_one(
-        {
-            "severity": doc["severity"],
-            "mode": doc["mode"],
-            "envelope_spectrum": {"$exists": True},
-            "augmented": False
-        }
-    )
-    measured_ses = pickle.loads(measured_ses["envelope_spectrum"])["mag"]
-
-    measured_encoding = pickle.loads(doc["encoding"])
-    measured_reconstruction = pickle.loads(doc["reconstruction"])
+# Delete me after 04022022
+# def compute_reconstruction_errors(doc):
+#     all_healthy_reconstruction = [pickle.loads(enc["reconstruction"]) for enc in db["encoding"].find(
+#         {
+#             "model_used": doc["model_used"],
+#             "severity": "0",
+#             "augmented": False,
+#         })]
+#     all_healthy_reconstruction = np.vstack(all_healthy_reconstruction)
+#
+#     measured_ses = db["processed"].find_one(
+#         {
+#             "severity": doc["severity"],
+#             "mode": doc["mode"],
+#             "envelope_spectrum": {"$exists": True},
+#             "augmented": False
+#         }
+#     )
+#     measured_ses = pickle.loads(measured_ses["envelope_spectrum"])["mag"]
+#
+#     measured_encoding = pickle.loads(doc["encoding"])
+#     measured_reconstruction = pickle.loads(doc["reconstruction"])
 
 
 
 class EncodingMovementMetrics(object):
-    def __init__(self, model_used):
+    def __init__(self, model_used,db_to_act_on):
         self.model_used = model_used
-        self.db, self.client = make_db()
+        self.db, self.client = make_db(db_to_act_on)
         self.expected_failure_modes = self.db["encoding"].distinct("mode", {
             "augmented": True})  # What are the potential modes that have been accounted for in the augmentation.
 
         # Get examples of healthy and damaged data
         self.healthy_encoding = self.get_healthy_encoding_example()
 
-        self.max_severity = db['augmented'].distinct("severity")[-1]
+        self.max_severity = self.db['augmented'].distinct("severity")[-1]
 
     def get_severe_augmented_encoding_example(self, expected_mode):
         # Get an example of what we expect severe failure would look like for each failure mode
@@ -85,7 +80,7 @@ class EncodingMovementMetrics(object):
 
     def get_healthy_encoding_example(self):
         # Get example of healthy data encoding for the same mode as the doc (Note that healthy data is not strictly associated with a given mode"
-        all_healthy_encoding = [pickle.loads(enc["encoding"]) for enc in db["encoding"].find({
+        all_healthy_encoding = [pickle.loads(enc["encoding"]) for enc in self.db["encoding"].find({
             "model_used": self.model_used,
             "severity": "0",
             "augmented": False})]
@@ -182,18 +177,19 @@ class EncodingMovementMetrics(object):
 # tup = a.get_metrics_for_failure_direction_projection(encoding_example,"ball")
 
 def main():
-    from database_definitions import metrics
-    metrics.delete_many({})
+    db_to_act_on = "phenomenological_rapid"
+    db,client = make_db(db_to_act_on)
+    db["metrics"].delete_many({})
 
     # Compute the metrics
     # model_used = "healthy_only_pca"
     for model_used in db["encoding"].distinct("model_used"):
         print(model_used)
         query = {"augmented": False, "model_used": model_used}
-        em_obj = EncodingMovementMetrics(model_used)
+        em_obj = EncodingMovementMetrics(model_used,db_to_act_on)
         # models: encoding.distinct("model_used")
-        DerivedDoc(query, "encoding", "metrics", em_obj.compute_metrics_from_doc).update_database(parallel=False)
-    return metrics
+        DerivedDoc(query, "encoding", "metrics", em_obj.compute_metrics_from_doc,db_to_act_on).update_database(parallel=False)
+    return db["metrics"]
 
 if __name__ == "__main__":
     r = main()

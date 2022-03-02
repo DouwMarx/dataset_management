@@ -5,23 +5,14 @@ from database_definitions import make_db
 from multiprocessing import Pool
 
 
-def new_derived_doc(query, source_name, target_name, function_to_apply):
+def new_derived_doc(query, source_name, target_name, function_to_apply,db_to_act_on):
     # Loop through all the documents that satisfy the conditions of the query
 
-    db, client = make_db()
+    db, client = make_db(db_to_act_on)
 
     source_collection = db[source_name]
     target_collection = db[target_name]
 
-    # processed = db["processed"]
-    # augmented = db["augmented"]
-    # encoding = db["encoding"]
-    # metrics = db["metrics"]
-
-    cursor = source_collection.find(query)
-
-    # print(cursor.count())
-    # if cursor.count() == 0:
     if source_collection.count_documents(query) == 0:
         print("No examples match the query in the source database")
 
@@ -47,14 +38,14 @@ def new_derived_doc(query, source_name, target_name, function_to_apply):
 
 
 class DerivedDoc():
-    def __init__(self, query, source_name, target_name, function_to_apply):
+    def __init__(self, query, source_name, target_name, function_to_apply,db_to_act_on):
         self.query = query
         self.source_name = source_name
         self.target_name = target_name
         self.process = function_to_apply
 
         # Instantiate the databases related to this process
-        self.db, self.client = make_db()
+        self.db, self.client = make_db(db_to_act_on)
         self.source_collection = self.db[source_name]
         self.target_collection = self.db[target_name]
 

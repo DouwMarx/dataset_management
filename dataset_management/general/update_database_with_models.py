@@ -3,12 +3,15 @@ from informed_anomaly_detection.models.pca import PCAHealthyOnly, PCAHealthyAndA
 from informed_anomaly_detection.models.prescribe_latent_movement_direction import get_prescribe_latent_movement_direction_model
 from informed_anomaly_detection.models.maximize_distance_between_latent_directions import get_maximize_distance_between_latent_directions_model
 from informed_anomaly_detection.models.maximize_distance_between_latent_directions_with_magnitude import get_maximize_distance_between_latent_directions_with_magnitude
-from database_definitions import db
+
+from database_definitions import make_db
 from dataset_management.ultils.save_trained_models import save_trained_model
 
 
 
 def main():
+    db_to_act_on = "phenomenological_rapid"
+    db,client = make_db(db_to_act_on)
     db["model"].delete_many({})
 
     # sklearn_models = [PCAHealthyOnly(), PCAHealthyAndAugmented()] + [PCAHealthyAndMode(mode) for mode in
@@ -28,8 +31,8 @@ def main():
 
 
     torch_models = [get_prescribe_latent_movement_direction_model(),
-                    get_maximize_distance_between_latent_directions_model(),
-                    get_maximize_distance_between_latent_directions_with_magnitude(),
+                    # get_maximize_distance_between_latent_directions_model(),
+                    # get_maximize_distance_between_latent_directions_with_magnitude(),
                     ]
 
     implementation = "torch"

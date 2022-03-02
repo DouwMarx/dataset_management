@@ -4,7 +4,6 @@ import numpy as np
 import pandas as pd
 import os
 from file_definitions import ims_path
-from database_definitions import db_ims
 from pypm.phenomenological_bearing_model.bearing_model import Bearing
 
 

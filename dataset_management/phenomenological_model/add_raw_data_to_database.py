@@ -1,11 +1,11 @@
 import pickle
 from pypm.phenomenological_bearing_model.make_data import PyBearingDataset
-from database_definitions import raw, processed, augmented
+from database_definitions import make_db
 
-
-def build_phenomenological_database(n_severities = 10, rapid=True):
+def build_phenomenological_database(db_to_act_on, n_severities = 10, rapid=True):
     # Mongo database
-    raw.delete_many({}) #  Remove the items in the collection
+    db,client = make_db(db_to_act_on)
+    db["raw"].delete_many({}) #  Remove the items in the collection
 
     o = PyBearingDataset(n_severities=n_severities, failure_modes=["ball", "inner", "outer"],quick_iter=rapid)
     result_dict = o.make_measurements_for_different_failure_mode()
@@ -15,7 +15,6 @@ def build_phenomenological_database(n_severities = 10, rapid=True):
         for severity_name,severity_data in mode_data.items():
 
             meta_data = severity_data["meta_data"]
-            print(meta_data.keys())
             time_series = severity_data["time_domain"]
 
             doc = {"mode": mode_name,
@@ -26,14 +25,15 @@ def build_phenomenological_database(n_severities = 10, rapid=True):
                    "augmented":False
                    }
 
-            raw.insert_one(doc)  # Insert document into the collection
+            db["raw"].insert_one(doc)  # Insert document into the collection
 
-    return raw# The mongodb collection
+    return db["raw"]# The mongodb collection
 
 
 def main():
+    db_to_act_on = "phenomenological_rapid"
     sevs =3
-    fd = build_phenomenological_database(n_severities=sevs, rapid=True)
+    fd = build_phenomenological_database(db_to_act_on,n_severities=sevs, rapid=True)
     r = fd.find({"mode":"inner"})
     l = len(list(r)) # Check that the length of the database will be the same as the number of severities
     return l, sevs

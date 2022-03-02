@@ -1,5 +1,7 @@
 from signal_processing.spectra import env_spec, envelope
 import pickle
+
+from database_definitions import make_db
 from dataset_management.ultils.update_database import DerivedDoc,new_docs_from_computed
 
 
@@ -47,6 +49,7 @@ def compute_features_from_time_series_doc(doc):
                                                             }),
                          "augmented": doc["augmented"]
                          }
+    print("env_spec_computed")
     computed_features = [envelope_time_series, envelope_spectrum]
 
     new_docs = new_docs_from_computed(doc,computed_features)
@@ -54,14 +57,15 @@ def compute_features_from_time_series_doc(doc):
 
 
 def main():
-    from database_definitions import processed
-    processed.delete_many({})
+    db_to_act_on = "phenomenological_rapid"
+    db,client = make_db(db_to_act_on)
+    db["processed"].delete_many({})
 
     # Process the time data
     query = {"time_series": {"$exists": True}}
-    DerivedDoc(query, "raw", "processed", compute_features_from_time_series_doc).update_database(parallel=True)
+    DerivedDoc(query, "raw", "processed", compute_features_from_time_series_doc,db_to_act_on).update_database(parallel=True)
 
-    return processed
+    return db["processed"]
 
 
 if __name__ == "__main__":

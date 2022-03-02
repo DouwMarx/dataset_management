@@ -5,8 +5,8 @@ import torch
 
 
 class Encoding():
-    def __init__(self,model_query):
-        self.db, self.client = make_db()
+    def __init__(self,model_query,db_to_act_on):
+        self.db, self.client = make_db(db_to_act_on)
         self.model_query = model_query
 
         print("Computing encodings for {} models".format(self.db["model"].count_documents(model_query)))
@@ -40,18 +40,19 @@ class Encoding():
 
 
 def main():
-    from database_definitions import encoding
-    encoding.delete_many({})
+    db_to_act_on = "phenomenological_rapid"
+    db,client = make_db(db_to_act_on)
+    db["encoding"].delete_many({})
 
     for augmented,source in zip([False,True],["processed","augmented"]):
 
         models_to_use_query = {}#{"implementation":"sklearn"} # Currently using all available models
-        derived_doc_func = Encoding(models_to_use_query).compute_encoding_from_doc
+        derived_doc_func = Encoding(models_to_use_query,db_to_act_on).compute_encoding_from_doc
         query = {"augmented": augmented, "envelope_spectrum": {"$exists": True}}
-        DerivedDoc(query, source, "encoding", derived_doc_func).update_database(parallel=False)
+        DerivedDoc(query, source, "encoding", derived_doc_func,db_to_act_on).update_database(parallel=False)
 
-    return encoding
-#
+    return db["encoding"]
+
 
 if __name__ == "__main__":
     r = main()
