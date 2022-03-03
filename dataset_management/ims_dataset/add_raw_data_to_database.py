@@ -5,6 +5,8 @@ import pandas as pd
 import os
 from file_definitions import ims_path
 from pypm.phenomenological_bearing_model.bearing_model import Bearing
+from database_definitions import make_db
+from tqdm import tqdm
 
 
 
@@ -15,12 +17,13 @@ class IMSTest(object):
         self.folder_name = folder_name
         self.channel_info = channel_info
         self.channel_names = [channel_dict["measurement_name"] for channel_dict in self.channel_info]  # Extract the names of the channels
-
         self.n_sev = n_sev
-
         self.number_of_measurements = len(list(ims_path.joinpath(self.folder_name).glob('**/*')))
-
         self.rotation_frequency = 2000/60 # rev/s  , Hz
+
+        self.db,self.client = make_db("ims")
+
+
 
 
         if rapid_for_test:
@@ -107,87 +110,53 @@ class IMSTest(object):
 
         meta_data = self.ims_bearing_meta_data(channel_id)
 
-        docs_for_channel = []
         for severity,time_series_data in enumerate(data_for_severities):
             doc = {"mode": info_for_channel["mode"] ,
                    "severity": str(severity),
                    "meta_data": meta_data,
                    "time_series": pickle.dumps(time_series_data),
                    "augmented": False,
-                   "ims_test_number":self.folder_name[0]
+                   "ims_test_number":self.folder_name[0],
+                   "ims_channel_number": channel_id + 1 # IMS convention is 1-based channel numbering
                    }
-            docs_for_channel.append(doc)
 
-        return docs_for_channel
+            self.db["raw"].insert_one(doc)
+
+        # return docs_for_channel
 
     def add_to_database(self):
-        for id, channel in enumerate(self.channel_names):
-            docs_for_channel = self.create_documents_for_channel(id)
-            db_ims["raw"].insert_many(docs_for_channel)
+        for id, channel in tqdm(enumerate(self.channel_names)):
+            self.create_documents_for_channel(id)
 
-
-        # raw.insert_one(doc)  # Insert document into the collection
 
 
 # print(measurement)
 # df = pd.read_csv(ims_path.joinpath(folder))
 
-channel_info_test_1 = [
-    {
-        "measurement_name": "bearing1_channel1",
-        "mode": None,
-        "healthy_records": [10,100]
-    },
-    {
-        "measurement_name": "bearing1_channel2",
-        "mode": None,
-        "healthy_records": [10, 100]
-    },
+db,client = make_db("ims")
+db["raw"].delete_many({})
 
-    {
-        "measurement_name": "bearing2_channel1",
-        "mode": None,
-        "healthy_records": [10, 100]
-    },
-    {
-        "measurement_name": "bearing2_channel2",
-        "mode": None,
-        "healthy_records": [10, 100]
-    },
-
-    {
-        "measurement_name": "bearing3_channel1",
-        "mode": "inner",
-        "healthy_records": [10, 100]
-    },
-    {
-        "measurement_name": "bearing3_channel2",
-        "mode": "inner",
-        "healthy_records": [10, 100]
-    },
-
-    {
-        "measurement_name": "bearing4_channel1",
-        "mode": "ball",
-       "healthy_records": [10, 100]
-},
-    {
-        "measurement_name": "bearing4_channel2",
-        "mode": "ball",
-        "healthy_records": [10, 100]
-    },
-]
-
+from experiment_meta_data import channel_info_test_1, channel_info_test_2,channel_info_test_3
 folders_for_different_tests = ["1st_test", "2nd_test", "3rd_test/txt"]  # Each folder has text files with the data
-folder = folders_for_different_tests[2]
-# test1 = IMSTest(folders_for_different_tests[0], channel_info_test_1,n_sev=25)
-# test1.add_to_database()
+sizes_per_set = [50,50,300]
+test = IMSTest(folders_for_different_tests[2], channel_info_test_3, n_sev=500)
+test.add_to_database()
 
-def main():
-    test1 = IMSTest(folders_for_different_tests[0], channel_info_test_1, n_sev=25,rapid_for_test=True)
-    return test1
+for i,folder,meta_data,sizes in zip(
+        range(len(folders_for_different_tests)),
+        folders_for_different_tests,
+        [channel_info_test_1,channel_info_test_2,channel_info_test_3],
+         sizes_per_set):
 
-if __name__ == "__main__":
-    t = main()
-    t.create_documents_for_channel(6)
+    test = IMSTest(folders_for_different_tests[i], channel_info_test_1,n_sev=sizes)
+    test.add_to_database()
+    del test
+
+# def main():
+#     test1 = IMSTest(folders_for_different_tests[0], channel_info_test_1, n_sev=25,rapid_for_test=True)
+#     return test1
+#
+# if __name__ == "__main__":
+#     t = main()
+#     t.create_documents_for_channel(6)
 
