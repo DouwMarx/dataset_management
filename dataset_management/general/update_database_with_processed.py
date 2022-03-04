@@ -1,3 +1,4 @@
+import numpy as np
 from signal_processing.spectra import env_spec, envelope
 import pickle
 
@@ -18,13 +19,15 @@ def limit_frequency_components(arr, fraction_of_spectrum_to_use=0.1):
     -------
 
     """
-    siglen = arr.shape[1]
+    siglen = len(arr)
     use = int(siglen * fraction_of_spectrum_to_use)
-    return arr[:, 1:use]
+    # return arr[:, 1:use]
+    return arr[1:use]
 
 
 def compute_features_from_time_series_doc(doc):
-    signal = pickle.loads(doc["time_series"])  # Get time signal
+    signal = np.array(doc["time_series"])  # Get time signal
+    # print(signal)
     # Get sampling frequency
     meta_data = doc["meta_data"]
     fs = meta_data["sampling_frequency"]
@@ -33,7 +36,7 @@ def compute_features_from_time_series_doc(doc):
     env = envelope(signal)  # The envelope of the signal can also be added to the computed features
     freq, mag, phase = env_spec(signal, fs=fs)
 
-    envelope_time_series = {"envelope_time_series": pickle.dumps(env),
+    envelope_time_series = {"envelope_time_series": list(env),
                             "augmented": doc["augmented"]
                             }
 
@@ -43,13 +46,12 @@ def compute_features_from_time_series_doc(doc):
     # print("in dta", limit_frequency_components(freq.reshape(1, -1)).flatten().shape)
 
     # Important: Notice that the DC gain is removed here
-    envelope_spectrum = {"envelope_spectrum": pickle.dumps({"freq": limit_frequency_components(freq.reshape(1,-1)).flatten(),
+    envelope_spectrum = {"envelope_spectrum": pickle.dumps({"freq": limit_frequency_components(freq),
                                                             "mag": limit_frequency_components(mag),
                                                             "phase": limit_frequency_components(phase)
                                                             }),
                          "augmented": doc["augmented"]
                          }
-    print("env_spec_computed")
     computed_features = [envelope_time_series, envelope_spectrum]
 
     new_docs = new_docs_from_computed(doc,computed_features)

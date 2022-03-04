@@ -13,8 +13,8 @@ class TestPhenomenologicalDataBase(unittest.TestCase):
 
     def test_build_phenomenological_database(self):
         from dataset_management.phenomenological_model.add_raw_data_to_database import main
-        result_len, n_severities = main()
-        self.assertEqual(result_len, n_severities)
+        n_docs = main()
+        self.assertGreater(n_docs, 0)
 
 class TestIMSDataBase(unittest.TestCase):
 

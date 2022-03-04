@@ -8,6 +8,7 @@ def build_phenomenological_database(db_to_act_on, n_severities = 3, rapid=True):
     # Mongo database
     db,client = make_db(db_to_act_on)
     db["raw"].delete_many({}) #  Remove the items in the collection
+    print(db["raw"].count_documents({}))
 
     o = PyBearingDataset(n_severities=n_severities, failure_modes=["ball", "inner", "outer"],quick_iter=rapid)
     result_dict = o.make_measurements_for_different_failure_mode()
@@ -39,11 +40,9 @@ def build_phenomenological_database(db_to_act_on, n_severities = 3, rapid=True):
 
 def main():
     db_to_act_on = "phenomenological_rapid"
-    sevs = 10
-    fd = build_phenomenological_database(db_to_act_on,n_severities=sevs, rapid=False)
-    r = fd.find({"mode":"inner"})
-    l = len(list(r)) # Check that the length of the database will be the same as the number of severities
-    return l, sevs
+    sevs = 2
+    fd = build_phenomenological_database(db_to_act_on,n_severities=sevs, rapid=True)
+    return fd.count_documents({})
 
 if __name__ == "__main__":
     main()
