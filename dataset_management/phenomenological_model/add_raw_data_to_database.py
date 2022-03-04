@@ -40,7 +40,7 @@ def build_phenomenological_database(db_to_act_on, n_severities = 3, rapid=True):
             for signal in time_series: # Each row is a signal
                 doc = {"mode": mode_name,
                        "severity": severity_name,
-                       # "meta_data": meta_data,
+                       "meta_data": meta_data,
                        "time_series": list(signal),
                        "augmented":False
                        }
