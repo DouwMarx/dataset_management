@@ -46,10 +46,10 @@ def compute_features_from_time_series_doc(doc):
     # print("in dta", limit_frequency_components(freq.reshape(1, -1)).flatten().shape)
 
     # Important: Notice that the DC gain is removed here
-    envelope_spectrum = {"envelope_spectrum": pickle.dumps({"freq": limit_frequency_components(freq),
-                                                            "mag": limit_frequency_components(mag),
-                                                            "phase": limit_frequency_components(phase)
-                                                            }),
+    envelope_spectrum = {"envelope_spectrum": {"freq": list(limit_frequency_components(freq)),
+                                                            "mag": list(limit_frequency_components(mag)),
+                                                            "phase": list(limit_frequency_components(phase))
+                                                            },
                          "augmented": doc["augmented"]
                          }
     computed_features = [envelope_time_series, envelope_spectrum]

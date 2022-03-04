@@ -22,18 +22,19 @@ class IMSTest(object):
         self.channel_info = channel_info  # Info defined for the channel
         self.channel_names = [channel_dict["measurement_name"] for channel_dict in
                               self.channel_info]  # Extract the names of the channels
-        self.number_of_measurements = len(list(ims_path.joinpath(self.folder_name).glob('**/*')))
+        # self.number_of_measurements = len(list(ims_path.joinpath(self.folder_name).glob('**/*')))
+        # self.number_of_measurements = len(list(ims_path.joinpath(self.folder_name).iterdir()))
         self.rotation_frequency = 2000 / 60  # rev/s  , Hz
 
         if rapid_for_test:
-            self.measurement_paths = list(ims_path.joinpath(self.folder_name).glob('**/*'))[
-                                     0:100]  # Only load a few of the samples when testing
+            self.measurement_paths = list(ims_path.joinpath(self.folder_name).iterdir())[
+                                     0:10]  # Only load a few of the samples when testing
         else:
-            self.measurement_paths = list(ims_path.joinpath(self.folder_name).glob('**/*'))
+            # self.measurement_paths = list(ims_path.joinpath(self.folder_name).glob('**/*'))
+            self.measurement_paths = list(ims_path.joinpath(self.folder_name).iterdir())
 
         self.n_samples_per_measurement = 20480
-        self.data_per_channel = [np.zeros([self.number_of_measurements, self.n_samples_per_measurement]) for channel in
-                                 channel_info]  # Create an empty array for each dataset
+
 
         d = 8.4
         D = 71.5
@@ -46,9 +47,9 @@ class IMSTest(object):
                               'D': D,
                               'n_ball': n_ball,
                               'contact_angle': contact_angle,
-                              'sampling_frequency': 20000
+                              'sampling_frequency': 20000,
+                              "expected_fault_frequencies":{fault_type:self.bearing_geom_obj.get_expected_fault_frequency(fault_type,self.rotation_frequency) for fault_type in ["ball","outer","inner"]}
                               }
-        # 't_duration': 1,
 
         self.meta_data_for_fault = {}
         for mode in ["ball", "inner", "outer"]:
@@ -140,13 +141,13 @@ class IMSTest(object):
 
 
 # First clear out the database
-db, client = make_db("ims")
+db, client = make_db("ims_test")
 db["raw"].delete_many({})
 print("Dumped existing data")
 
 folders_for_different_tests = ["1st_test", "2nd_test", "3rd_test/txt"]  # Each folder has text files with the data
 
 for folder, channel_info in zip(folders_for_different_tests, channel_info):
-    test_obj = IMSTest(folder, channel_info)
+    test_obj = IMSTest(folder, channel_info,rapid_for_test=True)
     test_obj.add_to_db()
     print("Done with one folder")

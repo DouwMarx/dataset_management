@@ -9,22 +9,21 @@ class Augmentation():
         self.db_to_act_on = db_to_act_on
         # Instantiate a own database
         self.db, self.client = make_db(db_to_act_on) # Depending on this input kwarg?, a different dataset could be selected.
+        self.max_severity = self.db["processed"].distinct("severity")[-1]
 
+        self.failure_modes = ["ball","inner","outer"]
+
+        # TODO: Very important, Notice that setting the augmented amplitude using failure data is cheating: This is however now done for rapid iteration.
+        # However, there will always be a disrepancy in practice.
+
+        # for mode in "ball"
+        # maximal_damage_for_mode = self.db["processed"].find_one({"envelope_spectrum": {"$exists": True},
+        #                                                          "severity": self.max_severity,
+        #                                                          "mode": doc["mode"]})
+        # damaged_envelope_spectrum = pickle.loads(maximal_damage_for_mode["envelope_spectrum"])["mag"]
+        # max_amplitude = np.max(damaged_envelope_spectrum)
 
     def compute_augmentation_from_feature_doc(self, doc):
-        """
-        Augments healthy data towards a faulty state for a given failure mode.
-
-        Parameters
-        ----------
-        mode
-        severity
-        results_dict
-
-        Returns
-        -------
-
-        """
 
         # TODO: The augmentation is currently envelope spectrum specific
 
@@ -71,6 +70,53 @@ class Augmentation():
         return new_docs
 
 
+    def compute_augmentation_from_healthy_feature_doc(self, doc):
+        """
+        Augments healthy data towards a faulty state for a given failure mode.
+
+        Parameters
+        ----------
+        mode
+        severity
+        results_dict
+
+        Returns
+        -------
+
+        """
+
+        # TODO: The augmentation is currently envelope spectrum specific
+
+        if doc["severity"] !="0":
+            raise ValueError("Non healthy data was used in the augmentation")
+
+        healthy_envelope_spectrum_mag = np.array(doc["envelope_spectrum"]["mag"])
+        healthy_envelope_spectrum_freq = np.array(doc["envelope_spectrum"]["freq"])
+
+        meta_data = doc["meta_data"]
+        fs = meta_data["sampling_frequency"]
+
+        expected_fault_frequency = 200 # This should be done for every mode meta_data["derived"]["average_fault_frequency"]
+
+
+        ases = AugmentedSES(healthy_ses=healthy_envelope_spectrum_mag,
+                            healthy_ses_freq= healthy_envelope_spectrum_freq,
+                            fs=fs,
+                            fault_frequency=expected_fault_frequency,
+                            peak_magnitude=0.01,# max_amplitude,#
+                            decay_percentage_over_interval=0.5
+                            )  # TODO: Fix peak magnitude, providing augmentation parameters?
+
+        augmented_envelope_spectrum = ases.get_augmented_ses()
+
+        computed = [{"envelope_spectrum": {"freq": list(ases.frequencies),
+                                                        "mag": list(augmented_envelope_spectrum)},
+                     "augmented": True,
+                     "augmentation_meta_data": {"this": "that"}}]
+
+        new_docs = new_docs_from_computed(doc, computed)
+        return new_docs
+
 def main():
     db_to_act_on = "phenomenological_rapid"
     db,client = make_db(db_to_act_on)
@@ -79,8 +125,9 @@ def main():
     aug_obj = Augmentation(db_to_act_on)
 
     # Compute augmented data
-    query = {"envelope_spectrum": {"$exists": True}}
-    DerivedDoc(query, "processed", "augmented", aug_obj.compute_augmentation_from_feature_doc,db_to_act_on).update_database(parallel=False)
+    query = {"envelope_spectrum": {"$exists": True}, "severity":"0"}
+    # DerivedDoc(query, "processed", "augmented", aug_obj.compute_augmentation_from_feature_doc,db_to_act_on).update_database(parallel=False)
+    DerivedDoc(query, "processed", "augmented", aug_obj.compute_augmentation_from_healthy_feature_doc,db_to_act_on).update_database(parallel=False)
 
     return db["augmented"]
 
