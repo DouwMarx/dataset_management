@@ -1,42 +1,67 @@
 # Usefull snippets from kaggle page https://www.kaggle.com/furkancitil/nasa-bearing-dataset-rul-predictionk
+import itertools
 import pickle
 import numpy as np
 import pandas as pd
-import os
+from joblib import Parallel, delayed
+from experiment_meta_data import channel_info
+from database_definitions import make_db
 from file_definitions import ims_path
 from pypm.phenomenological_bearing_model.bearing_model import Bearing
-from database_definitions import make_db
+from multiprocessing import Pool
 from tqdm import tqdm
-
+from time import time
 
 
 class IMSTest(object):
-    def __init__(self, folder_name, channel_info, n_sev = 10,rapid_for_test = False):
-
-
-        self.folder_name = folder_name
-        self.channel_info = channel_info
-        self.channel_names = [channel_dict["measurement_name"] for channel_dict in self.channel_info]  # Extract the names of the channels
-        self.n_sev = n_sev
+    """
+    Used to add the IMS data to mongodb
+    """
+    def __init__(self, folder_name, channel_info, rapid_for_test=False):
+        self.folder_name = folder_name  # The folder where the text files are stored
+        self.channel_info = channel_info  # Info defined for the channel
+        self.channel_names = [channel_dict["measurement_name"] for channel_dict in
+                              self.channel_info]  # Extract the names of the channels
         self.number_of_measurements = len(list(ims_path.joinpath(self.folder_name).glob('**/*')))
-        self.rotation_frequency = 2000/60 # rev/s  , Hz
-
-        self.db,self.client = make_db("ims")
-
-
-
+        self.rotation_frequency = 2000 / 60  # rev/s  , Hz
 
         if rapid_for_test:
-            self.measurement_paths = list(ims_path.joinpath(self.folder_name).glob('**/*'))[0:10] # Only load a few of the samples when testing
+            self.measurement_paths = list(ims_path.joinpath(self.folder_name).glob('**/*'))[
+                                     0:100]  # Only load a few of the samples when testing
         else:
             self.measurement_paths = list(ims_path.joinpath(self.folder_name).glob('**/*'))
 
         self.n_samples_per_measurement = 20480
-        self.data_per_channel = [np.zeros([self.number_of_measurements, self.n_samples_per_measurement]) for channel in channel_info] # Create an empty array for each dataset
+        self.data_per_channel = [np.zeros([self.number_of_measurements, self.n_samples_per_measurement]) for channel in
+                                 channel_info]  # Create an empty array for each dataset
 
-        self.read_files() # Read the files into memory
+        d = 8.4
+        D = 71.5
+        n_ball = 16
+        contact_angle = 0.2647664475275398
 
-    def ims_bearing_meta_data(self,channel_id):
+        self.bearing_geom_obj = Bearing(d, D, contact_angle, n_ball)
+
+        self.ims_meta_data = {'d': d,
+                              'D': D,
+                              'n_ball': n_ball,
+                              'contact_angle': contact_angle,
+                              'sampling_frequency': 20000
+                              }
+        # 't_duration': 1,
+
+        self.meta_data_for_fault = {}
+        for mode in ["ball", "inner", "outer"]:
+            geometry_factor_for_mode = self.bearing_geom_obj.get_geometry_parameter(mode)
+            average_fault_freq = self.rotation_frequency * geometry_factor_for_mode / (2 * np.pi)
+
+            derived_params = {
+                'geometry_factor': geometry_factor_for_mode,
+                'average_fault_frequency': average_fault_freq
+            }
+            self.meta_data_for_fault.update({mode: derived_params})
+
+    def fault_meta_data(self, channel_id):
         """
         Bearing geometry for the Rexnord ZA-2115 bearing is is from the following paper:
 
@@ -45,118 +70,83 @@ class IMSTest(object):
         """
         mode_for_channel = self.channel_info[channel_id]["mode"]
 
-        d = 8.4
-        D = 71.5
-        n_ball = 16
-        contact_angle = 0.2647664475275398
-
-        bearing_obj = Bearing(d,D,contact_angle,n_ball)
-        print(mode_for_channel)
         if mode_for_channel is not None:
-            geometry_factor_for_mode = bearing_obj.get_geometry_parameter(mode_for_channel)
-            average_fault_freq = self.rotation_frequency * geometry_factor_for_mode / (2 * np.pi)
+            return self.meta_data_for_fault[mode_for_channel]
         else:
-            geometry_factor_for_mode = None
-            average_fault_freq = None
+            return None
 
-        bearing_geometry = {'d': d,
-                            'D': D,
-                            'n_ball': n_ball,
-                            'contact_angle': contact_angle,
-                            'sampling_frequency': 20000,
-                            # 't_duration': 1,
-                            # 'n_measurements': 100,
-                            'derived': {
-                                'geometry_factor': geometry_factor_for_mode,
-                                'average_fault_frequency': average_fault_freq
-                                        },
-                            'measured_time': [1]
-                            }
+    def read_file_as_df(self, file_path):
+        measurement = pd.read_csv(file_path, sep="\t", names=self.channel_names)
+        if len(measurement.index) != self.n_samples_per_measurement:
+            raise IndexError(
+                "The number of samples in the file is different than expected: ".format(len(measurement.index)))
+        return measurement
 
+    def create_document_per_channel(self, filepath):
+        dataframe_of_measurement_for_each_channel = self.read_file_as_df(filepath)
 
+        doc_per_channel = []
+        for channel_id, channel_name in enumerate(dataframe_of_measurement_for_each_channel.columns):
+            measurement_for_channel = dataframe_of_measurement_for_each_channel[channel_name].values
+            doc = self.create_document(list(measurement_for_channel), channel_id, filepath)
+            doc_per_channel.append(doc)
+        return doc_per_channel
 
-    def read_files(self):
-        # for measurement_id, filepath in enumerate(list(self.measurement_paths)[0:10]):  # For developement
-        for measurement_id, filepath in enumerate(self.measurement_paths):  # Loop through all files in the directory and read the data as pd dataframe
-            measurement = pd.read_csv(filepath, sep="\t", names=self.channel_names)
-
-            if len(measurement.index) != self.n_samples_per_measurement:
-                raise IndexError("The number of samples in the file is different than expected: ".format(len(measurement.index)))
-
-            for channel_id, channel_name in enumerate(measurement.columns):
-                measurement_for_channel = measurement[channel_name].values
-                self.data_per_channel[channel_id][measurement_id] = measurement_for_channel
-
-    def split_channel_into_severities(self, healthy_records, channel_id):
-        data_for_channel = self.data_per_channel[channel_id]
-
-        healthy_start = healthy_records[0]
-        healthy_end = healthy_records[1]
-
-        sev_groups_healthy = np.array([healthy_start])
-        sev_groups_damaged = np.linspace(healthy_end, self.number_of_measurements, self.n_sev, dtype=int,endpoint=False)
-        sev_groups = np.hstack([sev_groups_healthy,sev_groups_damaged])
-
-        data_for_severities = np.split(data_for_channel, sev_groups) # split data into groups with similar severity
-        data_for_severities = data_for_severities[1:] # discard any data before the healthy region (run in)
-
-        return data_for_severities
-
-    def create_documents_for_channel(self, channel_id):
+    def create_document(self, time_series_data, channel_id, file_path):
         info_for_channel = self.channel_info[channel_id]
-        healthy_records = info_for_channel["healthy_records"]
 
-        data_for_severities = self.split_channel_into_severities(healthy_records, channel_id)
+        fault_meta_data = self.fault_meta_data(channel_id)
 
-        meta_data = self.ims_bearing_meta_data(channel_id)
+        doc = {"mode": info_for_channel["mode"],
+               "severity": str(file_path.stem),  # str(severity), TODO: This should be related to the record number
+               "meta_data": fault_meta_data,
+               "time_series": list(time_series_data),
+               # "time_series": list(time_series_data),
+               # "time_series": time_series_data,
+               "augmented": False,
+               "ims_test_number": self.folder_name[0],  # First string of folder name
+               "ims_channel_number": str(int(channel_id + 1))  # IMS convention is 1-based channel numbering
+               }
+        return doc
 
-        for severity,time_series_data in enumerate(data_for_severities):
-            doc = {"mode": info_for_channel["mode"] ,
-                   "severity": str(severity),
-                   "meta_data": meta_data,
-                   "time_series": pickle.dumps(time_series_data),
-                   "augmented": False,
-                   "ims_test_number":self.folder_name[0],
-                   "ims_channel_number": channel_id + 1 # IMS convention is 1-based channel numbering
-                   }
+    def add_to_db(self):
 
-            self.db["raw"].insert_one(doc)
+        # Add chucks of documents to the db per time to keep memory manageable
 
-        # return docs_for_channel
+        process = self.create_document_per_channel
 
-    def add_to_database(self):
-        for id, channel in tqdm(enumerate(self.channel_names)):
-            self.create_documents_for_channel(id)
+        # n_per_run = 280
+        # for i in tqdm(range(0, len(self.measurement_paths) + n_per_run, n_per_run)):
+        #     result = Parallel(n_jobs=14)(
+        #         delayed(process)(i) for i in self.measurement_paths[i:i + n_per_run])
+        #     # flattened = itertools.chain.from_iterable(docs)
+        #     result = [item for sublist in result for item in sublist]
+        #
+        #     db, client = make_db("ims")
+        #     db["raw"].insert_many(result)
+        #     client.close()
+
+        n_per_batch= 200
+        for batch_start in tqdm(range(0, len(self.measurement_paths), n_per_batch)):
+            batch_result =  [process(sample_name) for sample_name in self.measurement_paths[batch_start:batch_start + n_per_batch]]
+            batch_result = list(itertools.chain(*batch_result))
+            db, client = make_db("ims")
+            db["raw"].insert_many(batch_result)
+            client.close()
 
 
+    def serial(self):
+        return [self.create_document_per_channel(path) for path in tqdm(self.measurement_paths[0:100])]
 
-# print(measurement)
-# df = pd.read_csv(ims_path.joinpath(folder))
 
-db,client = make_db("ims")
+# First clear out the database
+db, client = make_db("ims")
 db["raw"].delete_many({})
+print("Dumped existing data")
 
-from experiment_meta_data import channel_info_test_1, channel_info_test_2,channel_info_test_3
 folders_for_different_tests = ["1st_test", "2nd_test", "3rd_test/txt"]  # Each folder has text files with the data
-sizes_per_set = [50,50,300]
-test = IMSTest(folders_for_different_tests[2], channel_info_test_3, n_sev=500)
-test.add_to_database()
 
-for i,folder,meta_data,sizes in zip(
-        range(len(folders_for_different_tests)),
-        folders_for_different_tests,
-        [channel_info_test_1,channel_info_test_2,channel_info_test_3],
-         sizes_per_set):
-
-    test = IMSTest(folders_for_different_tests[i], channel_info_test_1,n_sev=sizes)
-    test.add_to_database()
-    del test
-
-# def main():
-#     test1 = IMSTest(folders_for_different_tests[0], channel_info_test_1, n_sev=25,rapid_for_test=True)
-#     return test1
-#
-# if __name__ == "__main__":
-#     t = main()
-#     t.create_documents_for_channel(6)
-
+for folder, channel_info in zip(folders_for_different_tests, channel_info):
+    test_obj = IMSTest(folder, channel_info)
+    test_obj.add_to_db()
+    print("Done with one folder")

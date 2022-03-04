@@ -104,3 +104,6 @@ channel_info_test_3 = [
         "healthy_records": [11000, 100]
     },
 ]
+
+
+channel_info = [channel_info_test_1,channel_info_test_2,channel_info_test_3]
