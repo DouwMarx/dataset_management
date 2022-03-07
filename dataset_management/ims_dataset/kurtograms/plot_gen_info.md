@@ -1,0 +1,1 @@
+# Used 500 samples for each kurtogram average

@@ -1,6 +1,8 @@
 import itertools
 import time
 
+from tqdm import tqdm
+
 from database_definitions import make_db
 from multiprocessing import Pool
 
@@ -50,6 +52,7 @@ class DerivedDoc():
         self.target_collection = self.db[target_name]
 
         self.process_arguments = (doc for doc in self.source_collection.find(self.query))
+        # TODO: Need to work with batches so that everything can fit into ram
 
     def parallel_do(self):
         pool = Pool()
@@ -57,7 +60,7 @@ class DerivedDoc():
         return result
 
     def serial_do(self):
-        return [self.process(arg) for arg in self.process_arguments]
+        return [self.process(arg) for arg in tqdm(self.process_arguments)]
 
     def update_database(self, parallel=True):
         # TODO: It might be that the idea of not updating the database separately in each process, could lead to memmory issues.
@@ -76,10 +79,10 @@ class DerivedDoc():
 
         self.target_collection.insert_many(flattened)
 
-        docs_at_end = self.target_collection.count_documents({})
+        docs_at_end = self.target_collection.estimated_document_count()
         print("Time elapsed applying {}: ".format(self.process.__name__), time.time() - t_start, "sec")
         print("Parallel :{}".format(str(parallel)))
-        print("{} documents added".format(docs_at_end - docs_at_start))
+        print("roughly {} documents added".format(docs_at_end - docs_at_start))
         print("")
 
 

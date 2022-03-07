@@ -28,7 +28,7 @@ class IMSTest(object):
 
         if rapid_for_test:
             self.measurement_paths = list(ims_path.joinpath(self.folder_name).iterdir())[
-                                     0:10]  # Only load a few of the samples when testing
+                                     -10:]  # Only load last few samples (most damaged)
         else:
             # self.measurement_paths = list(ims_path.joinpath(self.folder_name).glob('**/*'))
             self.measurement_paths = list(ims_path.joinpath(self.folder_name).iterdir())
@@ -51,30 +51,16 @@ class IMSTest(object):
                               "expected_fault_frequencies":{fault_type:self.bearing_geom_obj.get_expected_fault_frequency(fault_type,self.rotation_frequency) for fault_type in ["ball","outer","inner"]}
                               }
 
-        self.meta_data_for_fault = {}
-        for mode in ["ball", "inner", "outer"]:
-            geometry_factor_for_mode = self.bearing_geom_obj.get_geometry_parameter(mode)
-            average_fault_freq = self.rotation_frequency * geometry_factor_for_mode / (2 * np.pi)
-
-            derived_params = {
-                'geometry_factor': geometry_factor_for_mode,
-                'average_fault_frequency': average_fault_freq
-            }
-            self.meta_data_for_fault.update({mode: derived_params})
-
-    def fault_meta_data(self, channel_id):
-        """
-        Bearing geometry for the Rexnord ZA-2115 bearing is is from the following paper:
-
-        https: // www.researchgate.net / publication / 335937388_Health_Indicator_Construction_Based_on_MD - CUMSUM_with_Multi - Domain_Features_Selection_for_Rolling_Element_Bearing_Fault_Diagnosis
-
-        """
-        mode_for_channel = self.channel_info[channel_id]["mode"]
-
-        if mode_for_channel is not None:
-            return self.meta_data_for_fault[mode_for_channel]
-        else:
-            return None
+        # self.meta_data_for_fault = {}
+        # for mode in ["ball", "inner", "outer"]:
+        #     geometry_factor_for_mode = self.bearing_geom_obj.get_geometry_parameter(mode)
+        #     print(geometry_factor_for_mode)
+        #     average_fault_freq = self.rotation_frequency * geometry_factor_for_mode #/ (2 * np.pi)
+            # derived_params = {
+            #     'geometry_factor': geometry_factor_for_mode,
+            #     'average_fault_frequency': average_fault_freq
+            # }
+            # self.meta_data_for_fault.update({mode: derived_params})
 
     def read_file_as_df(self, file_path):
         measurement = pd.read_csv(file_path, sep="\t", names=self.channel_names)
@@ -96,11 +82,9 @@ class IMSTest(object):
     def create_document(self, time_series_data, channel_id, file_path):
         info_for_channel = self.channel_info[channel_id]
 
-        fault_meta_data = self.fault_meta_data(channel_id)
-
         doc = {"mode": info_for_channel["mode"],
                "severity": str(file_path.stem),  # str(severity), TODO: This should be related to the record number
-               "meta_data": fault_meta_data,
+               "meta_data": self.ims_meta_data,
                "time_series": list(time_series_data),
                # "time_series": list(time_series_data),
                # "time_series": time_series_data,
@@ -110,7 +94,7 @@ class IMSTest(object):
                }
         return doc
 
-    def add_to_db(self):
+    def add_to_db(self,target_db):
 
         # Add chucks of documents to the db per time to keep memory manageable
 
@@ -131,7 +115,7 @@ class IMSTest(object):
         for batch_start in tqdm(range(0, len(self.measurement_paths), n_per_batch)):
             batch_result =  [process(sample_name) for sample_name in self.measurement_paths[batch_start:batch_start + n_per_batch]]
             batch_result = list(itertools.chain(*batch_result))
-            db, client = make_db("ims")
+            db, client = make_db(target_db)
             db["raw"].insert_many(batch_result)
             client.close()
 
@@ -149,5 +133,5 @@ folders_for_different_tests = ["1st_test", "2nd_test", "3rd_test/txt"]  # Each f
 
 for folder, channel_info in zip(folders_for_different_tests, channel_info):
     test_obj = IMSTest(folder, channel_info,rapid_for_test=True)
-    test_obj.add_to_db()
+    test_obj.add_to_db("ims_test")
     print("Done with one folder")
