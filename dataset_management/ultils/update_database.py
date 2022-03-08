@@ -40,7 +40,7 @@ def new_derived_doc(query, source_name, target_name, function_to_apply,db_to_act
 
 
 class DerivedDoc():
-    def __init__(self, query, source_name, target_name, function_to_apply,db_to_act_on):
+    def __init__(self, query, source_name, target_name, function_to_apply,db_to_act_on,chunk_size=100):
         self.query = query
         self.source_name = source_name
         self.target_name = target_name
@@ -51,16 +51,19 @@ class DerivedDoc():
         self.source_collection = self.db[source_name]
         self.target_collection = self.db[target_name]
 
-        self.process_arguments = (doc for doc in self.source_collection.find(self.query))
+        self.chunk_size = chunk_size
+        self.cursor = self.source_collection.find(self.query, batch_size = self.chunk_size)
+
+        # self.process_arguments = (doc for doc in self.source_collection.find(self.query))
         # TODO: Need to work with batches so that everything can fit into ram
 
-    def parallel_do(self):
+    def parallel_do(self,process_arguments):
         pool = Pool()
-        result = pool.map(self.process, self.process_arguments)
+        result = pool.map(self.process, process_arguments)
         return result
 
-    def serial_do(self):
-        return [self.process(arg) for arg in tqdm(self.process_arguments)]
+    def serial_do(self, process_arguments):
+        return [self.process(arg) for arg in tqdm(process_arguments)]
 
     def update_database(self, parallel=True):
         # TODO: It might be that the idea of not updating the database separately in each process, could lead to memmory issues.
@@ -69,21 +72,43 @@ class DerivedDoc():
         docs_at_start = self.target_collection.count_documents({})
         t_start = time.time()
 
-        if parallel:
-            result = self.parallel_do()
-        else:
-            result = self.serial_do()
+        # chunks = yield_rows(cursor, CHUNK_SIZE)
+        # for chunk in chunks:
+        #     # do processing here
+        #     pass
 
-        # This will be a list of list (of documents). We flatten them to insert them into the database
-        flattened = itertools.chain.from_iterable(result)
+        for chunck in self.yield_rows():
+            process_arguments =  (doc for doc in chunck)
+            if parallel:
+                result = self.parallel_do(process_arguments)
+            else:
+                result = self.serial_do(process_arguments)
 
-        self.target_collection.insert_many(flattened)
+            # This will be a list of list (of documents). We flatten them to insert them into the database
+            flattened = itertools.chain.from_iterable(result)
+            self.target_collection.insert_many(flattened)
 
         docs_at_end = self.target_collection.estimated_document_count()
         print("Time elapsed applying {}: ".format(self.process.__name__), time.time() - t_start, "sec")
         print("Parallel :{}".format(str(parallel)))
         print("roughly {} documents added".format(docs_at_end - docs_at_start))
         print("")
+
+    def yield_rows(self):
+        """
+        Generator to yield chunks from cursor
+
+        Adapted from answer here:
+       https://stackoverflow.com/questions/54815892/pymongo-cursor-batch-size 
+        """
+        chunk = []
+        for i, row in enumerate(self.cursor):
+            if i % self.chunk_size == 0 and i > 0:
+                yield chunk
+                del chunk[:]
+            chunk.append(row)
+        yield chunk
+
 
 
 def new_docs_from_computed(doc, list_of_computed_dicts):
