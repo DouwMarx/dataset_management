@@ -1,6 +1,8 @@
 # Usefull snippets from kaggle page https://www.kaggle.com/furkancitil/nasa-bearing-dataset-rul-predictionk
 import itertools
 import pickle
+from datetime import datetime
+
 import numpy as np
 import pandas as pd
 from joblib import Parallel, delayed
@@ -33,6 +35,10 @@ class IMSTest(object):
             # self.measurement_paths = list(ims_path.joinpath(self.folder_name).glob('**/*'))
             self.measurement_paths = list(ims_path.joinpath(self.folder_name).iterdir())
 
+        # Make sure the record numbers follow the correct time stamps for different samples.
+        self.time_stamps = sorted([datetime.strptime(path.name,'%Y.%m.%d.%H.%M.%S') for path in self.measurement_paths])
+        self.record_numbers = {self.time_stamps[i]:str(i+1)for i in range(len(self.time_stamps))}
+
         self.n_samples_per_measurement = 20480
 
 
@@ -47,20 +53,9 @@ class IMSTest(object):
                               'D': D,
                               'n_ball': n_ball,
                               'contact_angle': contact_angle,
-                              'sampling_frequency': 20000,
+                              'sampling_frequency': 20480, # Notice that the sampling frequency here is not 20kHz as mentioned in the IMS document but slightly different as suggested by Liu and Gryllias 2020.
                               "expected_fault_frequencies":{fault_type:self.bearing_geom_obj.get_expected_fault_frequency(fault_type,self.rotation_frequency) for fault_type in ["ball","outer","inner"]}
                               }
-
-        # self.meta_data_for_fault = {}
-        # for mode in ["ball", "inner", "outer"]:
-        #     geometry_factor_for_mode = self.bearing_geom_obj.get_geometry_parameter(mode)
-        #     print(geometry_factor_for_mode)
-        #     average_fault_freq = self.rotation_frequency * geometry_factor_for_mode #/ (2 * np.pi)
-            # derived_params = {
-            #     'geometry_factor': geometry_factor_for_mode,
-            #     'average_fault_frequency': average_fault_freq
-            # }
-            # self.meta_data_for_fault.update({mode: derived_params})
 
     def read_file_as_df(self, file_path):
         measurement = pd.read_csv(file_path, sep="\t", names=self.channel_names)
@@ -82,12 +77,17 @@ class IMSTest(object):
     def create_document(self, time_series_data, channel_id, file_path):
         info_for_channel = self.channel_info[channel_id]
 
+        # print("test",self.folder_name[0])
+        # print("chan",str(int(channel_id + 1)))
+
+        time_stamp = datetime.strptime(file_path.name,'%Y.%m.%d.%H.%M.%S')
+
         doc = {"mode": info_for_channel["mode"],
                "severity": str(file_path.stem),  # str(severity), TODO: This should be related to the record number
                "meta_data": self.ims_meta_data,
                "time_series": list(time_series_data),
-               # "time_series": list(time_series_data),
-               # "time_series": time_series_data,
+               "time_stamp":time_stamp,
+               "record_number":self.record_numbers[time_stamp],
                "augmented": False,
                "ims_test_number": self.folder_name[0],  # First string of folder name
                "ims_channel_number": str(int(channel_id + 1))  # IMS convention is 1-based channel numbering
@@ -135,3 +135,6 @@ for folder, channel_info in zip(folders_for_different_tests, channel_info):
     test_obj = IMSTest(folder, channel_info,rapid_for_test=True)
     test_obj.add_to_db("ims_test")
     print("Done with one folder")
+
+for i, doc in enumerate(db["raw"].find({"channel":"1"}).sort("time_stamp")):
+    doc
