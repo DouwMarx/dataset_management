@@ -58,8 +58,6 @@ def compute_features_from_time_series_doc(doc):
 
 
 
-
-
 class ProcessData():
     def __init__(self, db_to_act_on,bandpass=False):
         self.db_to_act_on = db_to_act_on

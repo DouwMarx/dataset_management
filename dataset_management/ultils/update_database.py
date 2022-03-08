@@ -54,6 +54,11 @@ class DerivedDoc():
         self.chunk_size = chunk_size
         self.cursor = self.source_collection.find(self.query, batch_size = self.chunk_size)
 
+        self.doc_count = self.source_collection.count_documents(self.query)
+        if self.doc_count is 0:
+            raise ValueError("No documents found in the collection that match this query")
+
+
         # self.process_arguments = (doc for doc in self.source_collection.find(self.query))
         # TODO: Need to work with batches so that everything can fit into ram
 

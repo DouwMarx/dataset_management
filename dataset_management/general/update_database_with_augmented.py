@@ -124,7 +124,8 @@ class Augmentation():
 
 
 def main():
-    db_to_act_on = "phenomenological_rapid"
+    db_to_act_on = "ims_test"
+
     db, client = make_db(db_to_act_on)
     db["augmented"].delete_many({})
 
@@ -132,12 +133,10 @@ def main():
 
     # Compute augmented data
     query = {"envelope_spectrum": {"$exists": True}, "severity": "0"}
-    # DerivedDoc(query, "processed", "augmented", aug_obj.compute_augmentation_from_feature_doc,db_to_act_on).update_database(parallel=False)
     DerivedDoc(query, "processed", "augmented", aug_obj.compute_augmentation_from_healthy_feature_doc,
                db_to_act_on).update_database(parallel=False)
 
     return db["augmented"]
-
 
 if __name__ == "__main__":
     r = main()
