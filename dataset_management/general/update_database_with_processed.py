@@ -100,13 +100,16 @@ class ProcessData():
 
 
 
-def main():
-    # db_to_act_on = "phenomenological_rapid"
-    db_to_act_on = "ims_test"
+def main(db_to_act_on):
     db,client = make_db(db_to_act_on)
     db["processed"].delete_many({})
 
-    to_apply = ProcessData(db_to_act_on, bandpass=True).compute_features_from_time_series_doc
+    if db_to_act_on in ["ims","ims_test"]:
+        bandpass = True
+    else:
+        bandpass = False
+
+    to_apply = ProcessData(db_to_act_on, bandpass=bandpass).compute_features_from_time_series_doc
     # Process the time data
     query = {"time_series": {"$exists": True}}
     DerivedDoc(query, "raw", "processed", to_apply,db_to_act_on).update_database(parallel=False)
@@ -115,4 +118,4 @@ def main():
 
 
 if __name__ == "__main__":
-    r = main()
+    r = main("phenomenological_rapid")

@@ -164,35 +164,25 @@ class IMSTest(object):
 
 
 def main(db_to_act_on):
-    from experiment_meta_data import channel_info
+    from dataset_management.ims_dataset.experiment_meta_data import channel_info
     db, client = make_db(db_to_act_on)
     # First clear out the database
     db["raw"].delete_many({})
     print("Dumped existing data")
 
-    folders_for_different_tests = ["1st_test", "2nd_test", "3rd_test/txt"]  # Each folder has text files with the data
-
-    for folder, channel_info in zip(folders_for_different_tests, channel_info):
-        test_obj = IMSTest(folder, channel_info)
-        test_obj.add_to_db("ims_test")
-        print("Done with one folder")
-    return db
-
-
-def test():
-    db_to_act_on = "ims_test"
-    from dataset_management.ims_dataset.experiment_meta_data import channel_info
-    db, client = make_db(db_to_act_on)
-    db["raw"].delete_many({})
-    print("Dumped existing data")
+    if db_to_act_on in ["ims_test"]:
+        rapid_for_test = True
+    else:
+        rapid_for_test = False
 
     folders_for_different_tests = ["1st_test", "2nd_test", "3rd_test/txt"]  # Each folder has text files with the data
 
     for folder, channel_info in zip(folders_for_different_tests, channel_info):
-        test_obj = IMSTest(folder, channel_info, rapid_for_test=True)
+        test_obj = IMSTest(folder, channel_info, rapid_for_test=rapid_for_test)
         test_obj.add_to_db("ims_test")
         print("Done with one folder")
     return db
+
 
 if __name__ == "__main__":
-    main("ims")
+    main("ims_test")

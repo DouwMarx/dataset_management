@@ -39,7 +39,7 @@ def build_phenomenological_database(db_to_act_on, n_severities = 3, rapid=True):
 
             for signal in time_series: # Each row is a signal
                 doc = {"mode": mode_name,
-                       "severity": severity_name,
+                       "severity": int(severity_name),
                        "meta_data": meta_data,
                        "time_series": list(signal),
                        "augmented":False
@@ -55,11 +55,17 @@ def build_phenomenological_database(db_to_act_on, n_severities = 3, rapid=True):
     return db["raw"]# The mongodb collection
 
 
-def main():
-    db_to_act_on = "phenomenological_rapid"
-    sevs = 2
-    fd = build_phenomenological_database(db_to_act_on,n_severities=sevs, rapid=True)
+def main(db_to_act_on):
+    if db_to_act_on == "phenomenological_rapid":
+        sevs = 2
+        rapid = True
+    else:
+        sevs = 10
+        rapid = False
+
+    fd = build_phenomenological_database(db_to_act_on,n_severities=sevs, rapid=rapid)
+
     return fd.count_documents({})
 
 if __name__ == "__main__":
-    main()
+    main("phenomenological_rapid")

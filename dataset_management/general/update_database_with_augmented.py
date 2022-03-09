@@ -88,7 +88,7 @@ class Augmentation():
 
         # TODO: The augmentation is currently envelope spectrum specific
 
-        if doc["severity"] != "0":
+        if doc["severity"] != 0:
             raise ValueError("Non healthy data was used in the augmentation")
 
         healthy_envelope_spectrum_mag = np.array(doc["envelope_spectrum"]["mag"])
@@ -123,8 +123,8 @@ class Augmentation():
         return new_docs
 
 
-def main():
-    db_to_act_on = "ims_test"
+def main(db_to_act_on):
+    # db_to_act_on = "ims_test"
 
     db, client = make_db(db_to_act_on)
     db["augmented"].delete_many({})
@@ -132,11 +132,12 @@ def main():
     aug_obj = Augmentation(db_to_act_on)
 
     # Compute augmented data
-    query = {"envelope_spectrum": {"$exists": True}, "severity": 0} # TODO Severity in integers and not strings
+    query = {"envelope_spectrum": {"$exists": True}, "severity": 0}  # TODO Severity in integers and not strings
     DerivedDoc(query, "processed", "augmented", aug_obj.compute_augmentation_from_healthy_feature_doc,
                db_to_act_on).update_database(parallel=False)
 
     return db["augmented"]
 
 if __name__ == "__main__":
-    r = main()
+    r = main("phenomenological_rapid")
+
