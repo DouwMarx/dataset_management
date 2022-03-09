@@ -11,45 +11,45 @@ channel_info_test_1 = [
     {
         "measurement_name": "bearing1_channel1",
         "mode": None,
-        "healthy_records": [10,100]
+        "healthy_records": [200,600]
     },
     {
         "measurement_name": "bearing1_channel2",
         "mode": None,
-        "healthy_records": [10, 100]
+        "healthy_records": [200, 600]
     },
 
     {
         "measurement_name": "bearing2_channel1",
         "mode": None,
-        "healthy_records": [10, 100]
+        "healthy_records": [200, 600]
     },
     {
         "measurement_name": "bearing2_channel2",
         "mode": None,
-        "healthy_records": [10, 100]
+        "healthy_records": [200, 600]
     },
 
     {
         "measurement_name": "bearing3_channel1",
         "mode": "inner",
-        "healthy_records": [10, 100]
+        "healthy_records": [200, 600]
     },
     {
         "measurement_name": "bearing3_channel2",
         "mode": "inner",
-        "healthy_records": [10, 100]
+        "healthy_records": [200, 600]
     },
 
     {
         "measurement_name": "bearing4_channel1",
         "mode": "ball",
-        "healthy_records": [10, 100]
+        "healthy_records": [200, 600]
     },
     {
         "measurement_name": "bearing4_channel2",
         "mode": "ball",
-        "healthy_records": [10, 100]
+        "healthy_records": [200, 600]
     },
 ]
 
@@ -83,25 +83,25 @@ channel_info_test_3 = [
     {
         "measurement_name": "bearing1_channel1",
         "mode": None,
-        "healthy_records": [11000,100]
+        "healthy_records": [200,600]
     },
 
     {
         "measurement_name": "bearing2_channel2",
         "mode": None,
-        "healthy_records": [11000, 100]
+        "healthy_records": [200,600]
     },
 
     {
         "measurement_name": "bearing3_channel3",
         "mode": "outer",
-        "healthy_records": [11000, 100]
+        "healthy_records": [200,600]
     },
 
     {
         "measurement_name": "bearing4_channel4",
         "mode": None,
-        "healthy_records": [11000, 100]
+        "healthy_records": [200,600]
     },
 ]
 

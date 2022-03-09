@@ -19,8 +19,8 @@ class TestPhenomenologicalDataBase(unittest.TestCase):
 class TestIMSDataBase(unittest.TestCase):
 
     def test_build_ims_database(self):
-        from dataset_management.ims_dataset.add_raw_data_to_database import main
-        r = main()
+        from dataset_management.ims_dataset.add_raw_data_to_database import test
+        r = test()
 
 
 class TestProcessed(unittest.TestCase):

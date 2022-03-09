@@ -132,7 +132,7 @@ def main():
     aug_obj = Augmentation(db_to_act_on)
 
     # Compute augmented data
-    query = {"envelope_spectrum": {"$exists": True}, "severity": "0"}
+    query = {"envelope_spectrum": {"$exists": True}, "severity": 0} # TODO Severity in integers and not strings
     DerivedDoc(query, "processed", "augmented", aug_obj.compute_augmentation_from_healthy_feature_doc,
                db_to_act_on).update_database(parallel=False)
 
