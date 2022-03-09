@@ -25,51 +25,6 @@ class Augmentation():
         # damaged_envelope_spectrum = pickle.loads(maximal_damage_for_mode["envelope_spectrum"])["mag"]
         # max_amplitude = np.max(damaged_envelope_spectrum)
 
-    def compute_augmentation_from_feature_doc(self, doc):
-
-        # TODO: The augmentation is currently envelope spectrum specific
-
-        healthy_envelope_spectrum = self.db["processed"].find_one({"envelope_spectrum": {"$exists": True},
-                                                                   "severity": "0",
-                                                                   "mode": doc[
-                                                                       "mode"]})
-
-        healthy_envelope_spectrum = pickle.loads(healthy_envelope_spectrum["envelope_spectrum"])
-        healthy_envelope_spectrum_mag = healthy_envelope_spectrum["mag"]
-        healthy_envelope_spectrum_freq = healthy_envelope_spectrum["freq"]
-
-        # meta_data = pickle.loads(doc["meta_data"])
-        meta_data = doc["meta_data"]
-        fs = meta_data["sampling_frequency"]
-
-        expected_fault_frequency = meta_data["derived"]["average_fault_frequency"]
-
-        # TODO: Very important, Notice that setting the augmented amplitude using failure data is cheating: This is however now done for rapid iteration.
-        # However, there will always be a disrepancy in practice.
-        max_severity = self.db["processed"].distinct("severity")[-1]
-        maximal_damage_for_mode = self.db["processed"].find_one({"envelope_spectrum": {"$exists": True},
-                                                                 "severity": max_severity,
-                                                                 "mode": doc["mode"]})
-        damaged_envelope_spectrum = pickle.loads(maximal_damage_for_mode["envelope_spectrum"])["mag"]
-        max_amplitude = np.max(damaged_envelope_spectrum)
-
-        ases = AugmentedSES(healthy_ses=healthy_envelope_spectrum_mag,
-                            healthy_ses_freq=healthy_envelope_spectrum_freq,
-                            fs=fs,
-                            fault_frequency=expected_fault_frequency,
-                            peak_magnitude=max_amplitude,  # 0.01,
-                            decay_percentage_over_interval=0.5
-                            )  # TODO: Fix peak magnitude, providing augmentation parameters?
-
-        envelope_spectrum = ases.get_augmented_ses()
-
-        computed = [{"envelope_spectrum": pickle.dumps({"freq": ases.frequencies,
-                                                        "mag": envelope_spectrum}),
-                     "augmented": True,
-                     "augmentation_meta_data": {"this": "that"}}]
-
-        new_docs = new_docs_from_computed(doc, computed)
-        return new_docs
 
     def compute_augmentation_from_healthy_feature_doc(self, doc):
         """
@@ -96,6 +51,7 @@ class Augmentation():
 
         meta_data = doc["meta_data"]
         fs = meta_data["sampling_frequency"]
+
         expected_fault_frequency_for_mode = meta_data["expected_fault_frequencies"]
 
         augmented_doc_for_mode = []
@@ -106,7 +62,7 @@ class Augmentation():
                                 healthy_ses_freq=healthy_envelope_spectrum_freq,
                                 fs=fs,
                                 fault_frequency=expected_fault_frequency,
-                                peak_magnitude=0.01,  # max_amplitude,#
+                                peak_magnitude=0.04,  # max_amplitude,#
                                 decay_percentage_over_interval=0.5
                                 )  # TODO: Fix peak magnitude, providing augmentation parameters?
 
@@ -115,12 +71,13 @@ class Augmentation():
             computed = {"envelope_spectrum": {"freq": list(ases.frequencies),
                                               "mag": list(augmented_envelope_spectrum)},
                         "augmented": True,
-                        "augmentation_meta_data": {"this": "that"}}
+                        "meta_data": ases.augmentation_meta_data,
+                        "mode":fault_mode,
+                        "severity":999} # Use 999 severity for now
 
             augmented_doc_for_mode.append(computed)
 
-        new_docs = new_docs_from_computed(doc, augmented_doc_for_mode)
-        return new_docs
+        return augmented_doc_for_mode
 
 
 def main(db_to_act_on):

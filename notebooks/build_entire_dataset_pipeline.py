@@ -9,7 +9,8 @@ from dataset_management.general.update_database_with_metrics import main as main
 
 from time import time
 
-db_to_act_on = "ims_test"
+# db_to_act_on = "ims_test"
+db_to_act_on = "phenomenological_rapid"
 
 t_start = time()
 main_raw(db_to_act_on)
