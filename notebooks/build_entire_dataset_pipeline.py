@@ -28,9 +28,9 @@ t_start = time()
 main_model(db_to_act_on)
 print("Models trained in :", time()-t_start)
 
-# t_start = time()
-# main_enc()
-# print("Encodings computed in :", time()-t_start)
+t_start = time()
+main_enc(db_to_act_on)
+print("Encodings computed in :", time()-t_start)
 #
 # t_start = time()
 # main_metric()

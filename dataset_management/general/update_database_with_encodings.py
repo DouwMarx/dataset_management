@@ -20,17 +20,16 @@ class Encoding():
                 with open(model["path"], 'rb') as f:
                     model_object = pickle.load(f)
 
-            data = torch.from_numpy(pickle.loads(doc["envelope_spectrum"])["mag"]).float()
-            # limit_frequency_components(data)
-            encoding = model_object.encoder(data)
+            data = torch.tensor(doc["envelope_spectrum"]["mag"])
 
+            encoding = model_object.encoder(data)
             reconstruction = model_object.decoder(encoding)
 
             encodings_for_models.append(
-                {"encoding": pickle.dumps(encoding.detach().numpy()),
+                {"encoding": encoding.tolist(),
                  "model_used": model["name"],
                  "model_description": model["short_description"],
-                 "reconstruction": pickle.dumps(reconstruction.detach().numpy())
+                 "reconstruction": reconstruction.tolist()
                  }
             )
 
@@ -39,15 +38,15 @@ class Encoding():
 
 
 
-def main():
-    db_to_act_on = "phenomenological_rapid"
+def main(db_to_act_on):
     db,client = make_db(db_to_act_on)
     db["encoding"].delete_many({})
 
-    for augmented,source in zip([False,True],["processed","augmented"]):
+    for augmented, source in zip([False,True],["processed","augmented"]):
 
         models_to_use_query = {}#{"implementation":"sklearn"} # Currently using all available models
         derived_doc_func = Encoding(models_to_use_query,db_to_act_on).compute_encoding_from_doc
+        # TODO: There should be no augmented data in the processed db?
         query = {"augmented": augmented, "envelope_spectrum": {"$exists": True}}
         DerivedDoc(query, source, "encoding", derived_doc_func,db_to_act_on).update_database(parallel=False)
 
@@ -55,4 +54,4 @@ def main():
 
 
 if __name__ == "__main__":
-    r = main()
+    r = main("phenomenological_rapid")

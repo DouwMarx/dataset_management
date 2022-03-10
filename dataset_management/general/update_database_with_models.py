@@ -28,7 +28,7 @@ def main(db_to_act_on):
     #     path = save_trained_model(model, str(model_id), model_implementation=implementation)
     #     db["model"].update_one({"_id": model_id}, {"$set": {"path": str(path)}})
 
-    torch_models = [get_maximize_distance_between_latent_directions_model()
+    torch_models = [get_maximize_distance_between_latent_directions_model(db_to_act_on)
                     ]
 
     implementation = "torch"
