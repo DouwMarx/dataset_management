@@ -9,8 +9,8 @@ from dataset_management.general.update_database_with_metrics import main as main
 
 from time import time
 
-# db_to_act_on = "ims_test"
-db_to_act_on = "phenomenological_rapid"
+db_to_act_on = "ims_test"
+# db_to_act_on = "phenomenological_rapid"
 
 t_start = time()
 main_raw(db_to_act_on)
@@ -24,10 +24,10 @@ t_start = time()
 main_aug(db_to_act_on)
 print("augmented data updated in :", time()-t_start)
 
-# t_start = time()
-# main_model()
-# print("Models trained in :", time()-t_start)
-#
+t_start = time()
+main_model(db_to_act_on)
+print("Models trained in :", time()-t_start)
+
 # t_start = time()
 # main_enc()
 # print("Encodings computed in :", time()-t_start)

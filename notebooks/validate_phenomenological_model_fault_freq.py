@@ -24,3 +24,6 @@ plt.plot(freq,mag)
 print("fault type: ", doc["mode"])
 print("mean rotation frequency :", doc["meta_data"]["mean_rotation_frequency"])
 print("Expected fault frequencies :", doc["meta_data"]["expected_fault_frequencies"])
+
+
+# TODO: This could be moved to the phenomenological project. Envelope spectrum must just be be implemented again so that it does not rely on signal processing library

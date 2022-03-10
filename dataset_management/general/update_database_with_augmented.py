@@ -19,11 +19,15 @@ class Augmentation():
         # However, there will always be a disrepancy in practice.
 
         # for mode in "ball"
-        # maximal_damage_for_mode = self.db["processed"].find_one({"envelope_spectrum": {"$exists": True},
-        #                                                          "severity": self.max_severity,
-        #                                                          "mode": doc["mode"]})
-        # damaged_envelope_spectrum = pickle.loads(maximal_damage_for_mode["envelope_spectrum"])["mag"]
-        # max_amplitude = np.max(damaged_envelope_spectrum)
+
+        self.env_spec_max_for_mode = {}
+        for mode in self.db["processed"].distinct("mode"):
+            docs = self.db["processed"].find(
+                {"envelope_spectrum": {"$exists": True},
+                 "mode": mode
+                 }).sort("severity", direction=-1).limit(20)
+            env_spec_max = [np.max(doc["envelope_spectrum"]["mag"]) for doc in docs]
+            self.env_spec_max_for_mode.update({mode:np.median(env_spec_max)})
 
 
     def compute_augmentation_from_healthy_feature_doc(self, doc):
@@ -58,11 +62,15 @@ class Augmentation():
         for fault_mode in ["ball", "inner", "outer"]:
             expected_fault_frequency = expected_fault_frequency_for_mode[fault_mode]
 
+            peak_mag = self.env_spec_max_for_mode[fault_mode] # TODO: notice that knowin the expected magnitude is cheating.
+                                                              # Doming this now for quick iteration
+
             ases = AugmentedSES(healthy_ses=healthy_envelope_spectrum_mag,
                                 healthy_ses_freq=healthy_envelope_spectrum_freq,
                                 fs=fs,
                                 fault_frequency=expected_fault_frequency,
-                                peak_magnitude=0.04,  # max_amplitude,#
+                                # peak_magnitude=0.04,  # max_amplitude,#
+                                peak_magnitude= peak_mag,  # max_amplitude,#
                                 decay_percentage_over_interval=0.5
                                 )  # TODO: Fix peak magnitude, providing augmentation parameters?
 
