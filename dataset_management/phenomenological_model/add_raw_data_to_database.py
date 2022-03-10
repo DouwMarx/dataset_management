@@ -42,16 +42,14 @@ def build_phenomenological_database(db_to_act_on, n_severities = 3, rapid=True):
                        "severity": int(severity_name),
                        "meta_data": meta_data,
                        "time_series": list(signal),
-                       "augmented":False
                        }
 
                 docs_for_mode.append(doc)
 
         db["raw"].insert_many(docs_for_mode)  # Insert document into the collection
 
-    print(db["raw"].count_documents({}))
+    print("Number of raw documents added: ",db["raw"].count_documents({}))
 
-    print(doc.keys)
     return db["raw"]# The mongodb collection
 
 

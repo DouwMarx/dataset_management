@@ -81,14 +81,12 @@ class ProcessData():
         env = envelope(signal)
         freq, mag, phase = env_spec(signal, fs=fs)
         envelope_time_series = {"envelope_time_series": list(env),
-                                "augmented": doc["augmented"]
                                 }
         # Important: Notice that the DC gain is removed here
         envelope_spectrum = {"envelope_spectrum": {"freq": list(limit_frequency_components(freq)),
                                                    "mag": list(limit_frequency_components(mag)),
                                                    "phase": list(limit_frequency_components(phase))
                                                    },
-                             "augmented": doc["augmented"]
                              }
         computed_features = [envelope_time_series, envelope_spectrum]
 

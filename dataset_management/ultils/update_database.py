@@ -40,7 +40,7 @@ def new_derived_doc(query, source_name, target_name, function_to_apply,db_to_act
 
 
 class DerivedDoc():
-    def __init__(self, query, source_name, target_name, function_to_apply,db_to_act_on,chunk_size=100):
+    def __init__(self, query, source_name, target_name, function_to_apply,db_to_act_on,chunk_size=1000):
         self.query = query
         self.source_name = source_name
         self.target_name = target_name
@@ -127,7 +127,7 @@ def new_docs_from_computed(doc, list_of_computed_dicts):
         #            "augmented": doc["augmented"]
         #            }
 
-        to_transfer = ["mode", "severity", "meta_data", "augmented"]
+        to_transfer = ["mode", "severity", "meta_data"]
 
         new_doc = {key: doc[key] for key in to_transfer}
         # new_doc = doc["mode", "severity"]

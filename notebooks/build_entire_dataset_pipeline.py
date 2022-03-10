@@ -9,20 +9,22 @@ from dataset_management.general.update_database_with_metrics import main as main
 
 from time import time
 
-db_to_act_on = "ims_test"
+# db_to_act_on = "ims_test"
+db_to_act_on = "ims"
+# db_to_act_on = "phenomenological"
 # db_to_act_on = "phenomenological_rapid"
 
-t_start = time()
-main_raw(db_to_act_on)
-print("raw data generated in :", time()-t_start)
-
-t_start = time()
-main_proc(db_to_act_on)
-print("processed data updated in :", time()-t_start)
-
-t_start = time()
-main_aug(db_to_act_on)
-print("augmented data updated in :", time()-t_start)
+# t_start = time()
+# main_raw(db_to_act_on)
+# print("raw data generated in :", time()-t_start)
+#
+# t_start = time()
+# main_proc(db_to_act_on)
+# print("processed data updated in :", time()-t_start)
+#
+# t_start = time()
+# main_aug(db_to_act_on)
+# print("augmented data updated in :", time()-t_start)
 
 t_start = time()
 main_model(db_to_act_on)

@@ -146,7 +146,7 @@ class IMSTest(object):
             # batch_ids = [healthy_start - int(n_per_batch/2),healthy_end - int(n_per_batch/2), self.n_records - int(n_per_batch/2)]
             print(batch_ids)
         else:
-            n_per_batch = 1000
+            n_per_batch = 200
             batch_ids = range(0, self.n_records, n_per_batch)
 
         # TODO: Add the test functionality here to make it around the healhty damage treshold
@@ -166,9 +166,17 @@ class IMSTest(object):
 def main(db_to_act_on):
     from dataset_management.ims_dataset.experiment_meta_data import channel_info
     db, client = make_db(db_to_act_on)
+
+    for name in db.collection_names():
+        db.drop_collection(name)
+
+    db, client = make_db(db_to_act_on)
     # First clear out the database
     db["raw"].delete_many({})
     print("Dumped existing data")
+
+    for name in db.collection_names():
+        db.drop_collection(name)
 
     if db_to_act_on in ["ims_test"]:
         rapid_for_test = True
@@ -179,7 +187,7 @@ def main(db_to_act_on):
 
     for folder, channel_info in zip(folders_for_different_tests, channel_info):
         test_obj = IMSTest(folder, channel_info, rapid_for_test=rapid_for_test)
-        test_obj.add_to_db("ims_test")
+        test_obj.add_to_db(db_to_act_on)
         print("Done with one folder")
     return db
 
