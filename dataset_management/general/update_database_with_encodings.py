@@ -5,7 +5,7 @@ import torch
 
 
 class Encoding():
-    def __init__(self,model_query,db_to_act_on):
+    def __init__(self,model_query,db_to_act_on,augmented):
         self.db, self.client = make_db(db_to_act_on)
         self.model_query = model_query
 
@@ -14,6 +14,7 @@ class Encoding():
         torch_query = self.model_query.copy().update({"implementation":"torch"})
         self.torch_docs = list(self.db["model"].find(torch_query))
         self.torch_models = [torch.load(model["path"]).to("cpu") for model in self.torch_docs]
+        self.augmented = augmented
 
         # sklearn_query = self.model_query.copy().update({"implementation":"sklearn"})
         # self.torch_models = [torch.load(model["path"]).to("cpu") for model in self.db["model"].find(sklearn_query)]
@@ -36,7 +37,8 @@ class Encoding():
                 {"encoding": encoding.tolist(),
                  "model_used": model_doc["name"],
                  "model_description": model_doc["short_description"],
-                 "reconstruction": reconstruction.tolist()
+                 "reconstruction": reconstruction.tolist(),
+                 "augmented": self.augmented
                  }
             )
 
@@ -49,11 +51,11 @@ def main(db_to_act_on):
     db,client = make_db(db_to_act_on)
     db["encoding"].delete_many({})
 
-    for source in ["processed","augmented"]:
+    for source,augmented in zip(["processed","augmented"],[False,True]):
 
         models_to_use_query = {}#{"implementation":"sklearn"} # Currently using all available models
-        derived_doc_func = Encoding(models_to_use_query,db_to_act_on).compute_encoding_from_doc
-        # TODO: There should be no augmented data in the processed db?
+        derived_doc_func = Encoding(models_to_use_query,db_to_act_on,augmented).compute_encoding_from_doc
+
         query = {"envelope_spectrum": {"$exists": True}}
         DerivedDoc(query, source, "encoding", derived_doc_func,db_to_act_on).update_database(parallel=False)
 

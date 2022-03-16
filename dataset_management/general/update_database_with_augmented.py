@@ -85,19 +85,35 @@ class Augmentation():
 
             augmented_doc_for_mode.append(computed)
 
-        return augmented_doc_for_mode
 
+        new_docs = new_docs_from_computed(doc, augmented_doc_for_mode)  # Add the meta-data keys
+        return new_docs
 
-def main(db_to_act_on):
-    # db_to_act_on = "ims_test"
-
+def ims_outer_t2_c1_aug(db_to_act_on):
     db, client = make_db(db_to_act_on)
     db["augmented"].delete_many({})
 
     aug_obj = Augmentation(db_to_act_on)
 
     # Compute augmented data
-    query = {"envelope_spectrum": {"$exists": True}, "severity": 0}  # TODO Severity in integers and not strings
+    query = {"envelope_spectrum": {"$exists": True},
+             "severity": 0,
+            'ims_test_number': "2",
+            'ims_channel_number': "1",
+        }
+    DerivedDoc(query, "processed", "augmented", aug_obj.compute_augmentation_from_healthy_feature_doc,
+               db_to_act_on).update_database(parallel=False)
+
+    return db["augmented"]
+
+def main(db_to_act_on):
+    db, client = make_db(db_to_act_on)
+    db["augmented"].delete_many({})
+
+    aug_obj = Augmentation(db_to_act_on)
+
+    # Compute augmented data
+    query = {"envelope_spectrum": {"$exists": True}, "severity": 0}
     DerivedDoc(query, "processed", "augmented", aug_obj.compute_augmentation_from_healthy_feature_doc,
                db_to_act_on).update_database(parallel=False)
 
