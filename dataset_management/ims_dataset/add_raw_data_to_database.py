@@ -20,16 +20,14 @@ class IMSTest(object):
     Used to add the IMS data to mongodb
     """
 
-    def __init__(self, folder_name, channel_info, rapid_for_test=False):
+    def __init__(self, folder_name, channel_info, rapid_level = None):
         self.folder_name = folder_name  # The folder where the text files are stored
         self.channel_info = channel_info  # Info defined for the channel
         self.channel_names = [channel_dict["measurement_name"] for channel_dict in
                               self.channel_info]  # Extract the names of the channels
-        # self.number_of_measurements = len(list(ims_path.joinpath(self.folder_name).glob('**/*')))
-        # self.number_of_measurements = len(list(ims_path.joinpath(self.folder_name).iterdir()))
         self.rotation_frequency = 2000 / 60  # rev/s  , Hz
 
-        self.rapid_for_test = rapid_for_test
+        self.rapid_level = rapid_level
 
         self.measurement_paths = list(ims_path.joinpath(self.folder_name).iterdir())
 
@@ -64,7 +62,7 @@ class IMSTest(object):
     def get_artificial_severity_index(self, record_number, channel):
         """
         This will give a severity between 0 and 10 for the samples based on record numbers.
-        It starts numbering after the healthy data
+        It starts numbering (1) after the healthy data with the higest severity being 10.
         :return:
         """
 
@@ -89,18 +87,17 @@ class IMSTest(object):
     def create_document_per_channel(self, filepath):
         dataframe_of_measurement_for_each_channel = self.read_file_as_df(filepath)
 
-        doc_per_channel = []
+        docs_per_channel = {col: "dum" for col in dataframe_of_measurement_for_each_channel.columns} # Empty list for each channel in the df
         for channel_id, channel_name in enumerate(dataframe_of_measurement_for_each_channel.columns):
             measurement_for_channel = dataframe_of_measurement_for_each_channel[channel_name].values
             doc = self.create_document(list(measurement_for_channel), channel_id, filepath)
-            doc_per_channel.append(doc)
-        return doc_per_channel
+            # doc_per_channel.append(doc)
+            docs_per_channel[channel_name] = doc
+        # return doc_per_channel
+        return docs_per_channel
 
     def create_document(self, time_series_data, channel_id, file_path):
         info_for_channel = self.channel_info[channel_id]
-
-        # print("test",self.folder_name[0])
-        # print("chan",str(int(channel_id + 1)))
 
         time_stamp = datetime.strptime(file_path.name, '%Y.%m.%d.%H.%M.%S')
         record_number = self.record_numbers[time_stamp]
@@ -118,7 +115,7 @@ class IMSTest(object):
                }
         return doc
 
-    def add_to_db(self, target_db):
+    def add_to_db(self, target_db_root):
 
         # Add chucks of documents to the db per time to keep memory manageable
 
@@ -135,28 +132,41 @@ class IMSTest(object):
         #     db["raw"].insert_many(result)
         #     client.close()
 
-        if self.rapid_for_test:
+        if self.rapid_level == "0":
             n_per_batch = 2
             batch_ids = range(0, self.n_records, n_per_batch)
             random.seed(12)
             batch_ids = random.sample(batch_ids,5)
 
+        elif self.rapid_level == "1":
+            n_per_batch = 100
+            batch_ids = range(0, self.n_records, n_per_batch)
+            random.seed(12)
+            batch_ids = random.sample(batch_ids, int(len(batch_ids)/4))
+
+        elif self.rapid_level == "2":
+            n_per_batch = 100
+            batch_ids = range(0, self.n_records, n_per_batch)
+            random.seed(12)
+            batch_ids = random.sample(batch_ids, int(len(batch_ids) / 2))
+
             # healthy_start = self.channel_info[0]["healthy_records"][0]
             # healthy_end= self.channel_info[0]["healthy_records"][1]
             # batch_ids = [healthy_start - int(n_per_batch/2),healthy_end - int(n_per_batch/2), self.n_records - int(n_per_batch/2)]
-            print(batch_ids)
         else:
-            n_per_batch = 200
+            n_per_batch = 100
             batch_ids = range(0, self.n_records, n_per_batch)
 
         # TODO: Add the test functionality here to make it around the healhty damage treshold
         for batch_start in tqdm(batch_ids):
             batch_result = [process(sample_name) for sample_name in
                             self.measurement_paths[batch_start:batch_start + n_per_batch]]
-            batch_result = list(itertools.chain(*batch_result))
-            db, client = make_db(target_db)
-            db["raw"].insert_many(batch_result)
-            client.close()
+            # batch_result = list(itertools.chain(*batch_result))
+            for channel in batch_result[0].keys():
+                docs = [res_dict[channel] for res_dict in batch_result]
+                db, client = make_db(target_db_root+ "_test"+ self.folder_name[0]+ "_" + channel)
+                db["raw"].insert_many(docs)
+                client.close()
 
     def serial(self):
         return [self.create_document_per_channel(path) for path in tqdm(self.measurement_paths[0:100])]
@@ -178,19 +188,21 @@ def main(db_to_act_on):
     for name in db.collection_names():
         db.drop_collection(name)
 
-    if db_to_act_on in ["ims_test"]:
-        rapid_for_test = True
+    if "rapid" in db_to_act_on:
+        rapid_level = db_to_act_on[-1] # Take the rapid number from the db name 0 is very rapid, 1 is mildly rapid
+
     else:
-        rapid_for_test = False
+        rapid_level = None
 
     folders_for_different_tests = ["1st_test", "2nd_test", "3rd_test/txt"]  # Each folder has text files with the data
 
     for folder, channel_info in zip(folders_for_different_tests, channel_info):
-        test_obj = IMSTest(folder, channel_info, rapid_for_test=rapid_for_test)
+        test_obj = IMSTest(folder, channel_info, rapid_level = rapid_level)
         test_obj.add_to_db(db_to_act_on)
         print("Done with one folder")
     return db
 
 
 if __name__ == "__main__":
-    main("ims_test")
+    main("ims")
+    # main("ims")

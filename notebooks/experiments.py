@@ -3,34 +3,34 @@ from dataset_management.general.update_database_with_processed import process_im
 from dataset_management.general.update_database_with_augmented import main as aug_main
 from dataset_management.general.update_database_with_models import main as mod_main
 from dataset_management.general.update_database_with_encodings import main as enc_main
-from dataset_management.general.update_database_with_models import ims_test1_channel3 as ims_t1_c3_mod
+from dataset_management.general.update_database_with_models import train_ims_models
 
 experiments ={
-"ims_test":
-    {"db_to_act_on":"ims_test",
-     "raw_func": ims_raw,
-     "process_func": process_ims,
-     "augment_func": aug_main,
-     "model_func": mod_main,
-     "encoding_func": enc_main
-     },
+ "ims_rapid1_t2_c1_outer":
+  {"db_to_act_on": "ims_rapid1_test2_bearing1_channel1",
+   "raw_func": ims_raw,
+   "process_func": process_ims,
+   "augment_func": aug_main,
+   "model_func": train_ims_models,
+   "encoding_func": enc_main
+   },
 
-"ims":
-    {"db_to_act_on": "ims",
-     "raw_func":  ims_raw,
-     "process_func":  process_ims,
-     "augment_func":  aug_main,
-     "model_func":  mod_main,
-     "encoding_func":  enc_main
-     },
+ "ims_rapid2_t2_c1_outer":
+  {"db_to_act_on": "ims_rapid2_test2_bearing1_channel1",
+   "raw_func": ims_raw,
+   "process_func": process_ims,
+   "augment_func": aug_main,
+   "model_func": train_ims_models,
+   "encoding_func": enc_main
+   },
 
- "ims_outer_t2_c1":
-  {"db_to_act_on": "ims",
-   "raw_func":  ims_raw,
-   "process_func":  process_ims,
-   "augment_func":  aug_main,
-   "model_func":  ims_t1_c3_mod,
-   "encoding_func":  enc_main
+ "ims_t2_c1_outer":
+  {"db_to_act_on": "ims_test2_bearing1_channel1",
+   "raw_func": ims_raw,
+   "process_func": process_ims,
+   "augment_func": aug_main,
+   "model_func": train_ims_models,
+   "encoding_func": enc_main
    },
 
  "phenomenological_rapid":
@@ -38,7 +38,7 @@ experiments ={
    "raw_func": pm_raw,
    "process_func": process_pm,
    "augment_func": aug_main,
-   "model_func": ims_t1_c3_mod,
+   "model_func": train_ims_models,
    "encoding_func": enc_main
    },
 
@@ -47,7 +47,7 @@ experiments ={
    "raw_func": pm_raw,
    "process_func": process_pm,
    "augment_func": aug_main,
-   "model_func": ims_t1_c3_mod,
+   "model_func": train_ims_models,
    "encoding_func": enc_main
    },
 

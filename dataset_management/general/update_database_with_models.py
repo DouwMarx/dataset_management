@@ -39,14 +39,13 @@ def main(db_to_act_on):
         db["model"].update_one({"_id": model_id}, {"$set": {"path": str(path)}})
     return db["model"]
 
-def ims_test1_channel3(db_to_act_on):
-    from informed_anomaly_detection.models.ims_dataset2_bearing1 import get_maximize_distance_between_latent_directions_model
+def train_ims_models(db_to_act_on):
+    from informed_anomaly_detection.models.env_spec_auto_encoder_latent import get_trained_latent_separation_model
     db, client = make_db(db_to_act_on)
     db["model"].delete_many({})
 
-    torch_models = [get_maximize_distance_between_latent_directions_model(db_to_act_on)
+    torch_models = [get_trained_latent_separation_model(db_to_act_on,batch_size=16,num_epochs=5)
                     ]
-
     implementation = "torch"
     for model in torch_models:
         insert_obj = db["model"].insert_one(

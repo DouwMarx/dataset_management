@@ -61,7 +61,10 @@ class Augmentation():
         for fault_mode in ["ball", "inner", "outer"]:
             expected_fault_frequency = expected_fault_frequency_for_mode[fault_mode]
 
-            peak_mag = self.env_spec_max_for_mode[fault_mode] # TODO: notice that knowing the expected magnitude is cheating.
+            if fault_mode in self.env_spec_max_for_mode:
+                peak_mag = self.env_spec_max_for_mode[fault_mode] # TODO: notice that knowing the expected magnitude is cheating.
+            else:
+                peak_mag = self.env_spec_max_for_mode[max(self.env_spec_max_for_mode)]
 
             # ases = AugmentedSES(healthy_ses=healthy_envelope_spectrum_mag,
             #                     healthy_ses_freq=healthy_envelope_spectrum_freq,
