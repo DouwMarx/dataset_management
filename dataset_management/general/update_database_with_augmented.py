@@ -1,5 +1,6 @@
 import pickle
 from augment_data.phenomenological_ses.make_phenomenological_ses import AugmentedSES
+from augment_data.envelope_with_traingular_spikes.make_envelope_spectrum_triangular import AugmentedEnvelopeFromFaultFrequencies
 from database_definitions import make_db
 from dataset_management.ultils.update_database import DerivedDoc, new_docs_from_computed
 import numpy as np
@@ -8,24 +9,21 @@ import numpy as np
 class Augmentation():
     def __init__(self, db_to_act_on):
         self.db_to_act_on = db_to_act_on
-        # Instantiate a own database
         self.db, self.client = make_db(
-            db_to_act_on)  # Depending on this input kwarg?, a different dataset could be selected.
+            db_to_act_on)
         self.max_severity = self.db["processed"].distinct("severity")[-1]
 
         self.failure_modes = ["ball", "inner", "outer"]
 
         # TODO: Very important, Notice that setting the augmented amplitude using failure data is cheating: This is however now done for rapid iteration.
-        # However, there will always be a disrepancy in practice.
-
-        # for mode in "ball"
+        # However, there will always be a discrepancy in practice.
 
         self.env_spec_max_for_mode = {}
         for mode in self.db["processed"].distinct("mode"):
             docs = self.db["processed"].find(
                 {"envelope_spectrum": {"$exists": True},
                  "mode": mode
-                 }).sort("severity", direction=-1).limit(20)
+                 }).sort("severity", direction=-1).limit(20) # Use the final 20 documents to estimate the maximum severity
             env_spec_max = [np.max(doc["envelope_spectrum"]["mag"]) for doc in docs]
             self.env_spec_max_for_mode.update({mode:np.median(env_spec_max)})
 
@@ -59,19 +57,28 @@ class Augmentation():
         expected_fault_frequency_for_mode = meta_data["expected_fault_frequencies"]
 
         augmented_doc_for_mode = []
+        # Loop through the different failure modes that could appear
         for fault_mode in ["ball", "inner", "outer"]:
             expected_fault_frequency = expected_fault_frequency_for_mode[fault_mode]
 
-            peak_mag = self.env_spec_max_for_mode[fault_mode] # TODO: notice that knowin the expected magnitude is cheating.
-                                                              # Doming this now for quick iteration
+            peak_mag = self.env_spec_max_for_mode[fault_mode] # TODO: notice that knowing the expected magnitude is cheating.
 
-            ases = AugmentedSES(healthy_ses=healthy_envelope_spectrum_mag,
+            # ases = AugmentedSES(healthy_ses=healthy_envelope_spectrum_mag,
+            #                     healthy_ses_freq=healthy_envelope_spectrum_freq,
+            #                     fs=fs,
+            #                     fault_frequency=expected_fault_frequency,
+            #                     # peak_magnitude=0.04,  # max_amplitude,#
+            #                     peak_magnitude= peak_mag,  # max_amplitude,#
+            #                     decay_percentage_over_interval=0.5
+            #                     )  # TODO: Fix peak magnitude, providing augmentation parameters?
+
+            ases = AugmentedEnvelopeFromFaultFrequencies(healthy_ses=healthy_envelope_spectrum_mag,
                                 healthy_ses_freq=healthy_envelope_spectrum_freq,
                                 fs=fs,
                                 fault_frequency=expected_fault_frequency,
                                 # peak_magnitude=0.04,  # max_amplitude,#
                                 peak_magnitude= peak_mag,  # max_amplitude,#
-                                decay_percentage_over_interval=0.5
+                                decay_percentage_over_interval=0.9
                                 )  # TODO: Fix peak magnitude, providing augmentation parameters?
 
             augmented_envelope_spectrum = ases.get_augmented_ses()

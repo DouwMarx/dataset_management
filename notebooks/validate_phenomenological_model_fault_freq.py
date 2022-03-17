@@ -4,6 +4,8 @@ from signal_processing.spectra import env_spec
 
 from database_definitions import make_db
 
+# Purpose of this scipt is to verify that the fault frequency shown by the envelope spectrum is the same as the fault frequency provided to the phenomenological model.
+
 db,client = make_db("phenomenological_rapid")
 
 doc = db["raw"].find_one({"mode":"outer",
@@ -26,4 +28,4 @@ print("mean rotation frequency :", doc["meta_data"]["mean_rotation_frequency"])
 print("Expected fault frequencies :", doc["meta_data"]["expected_fault_frequencies"])
 
 
-# TODO: This could be moved to the phenomenological project. Envelope spectrum must just be be implemented again so that it does not rely on signal processing library
+# TODO: This should be moved to the phenomenological project. Envelope spectrum must just be be implemented again so that it does not rely on signal processing library
