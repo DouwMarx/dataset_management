@@ -27,9 +27,9 @@ t_start = time()
 experiment_specs["model_func"](db_to_act_on)
 print("Models trained in :", time()-t_start)
 #
-# t_start = time()
-# experiment_specs["encoding_func"](db_to_act_on)
-# print("Encodings computed in :", time()-t_start)
+t_start = time()
+experiment_specs["encoding_func"](db_to_act_on)
+print("Encodings computed in :", time()-t_start)
 
 
 # from informed_anomaly_detection.visualisation import generate_plots_for_proof_of_concept
