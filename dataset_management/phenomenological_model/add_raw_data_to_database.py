@@ -54,7 +54,7 @@ def build_phenomenological_database(db_to_act_on, n_severities = 3, rapid=True):
 
 
 def main(db_to_act_on):
-    if db_to_act_on == "phenomenological_rapid":
+    if db_to_act_on == "phenomenological_rapid0":
         sevs = 2
         rapid = True
     else:
@@ -66,4 +66,5 @@ def main(db_to_act_on):
     return fd.count_documents({})
 
 if __name__ == "__main__":
-    main("phenomenological_rapid")
+    main("phenomenological_rapid0")
+    # main("phenomenological")

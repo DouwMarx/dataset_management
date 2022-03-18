@@ -1,10 +1,11 @@
 from experiments import experiments as experiment_dict
 from time import time
+from database_definitions import make_db
 
 # experiment = "ims_rapid2_t2_c1_outer"
-experiment = "ims_t2_c1_outer"
-# experiment = "phenomenological_rapid"
-# experiment = "phenomenological"
+# experiment = "ims_t2_c1_outer"
+# experiment = "phenomenological_rapid0"
+experiment = "phenomenological"
 
 experiment_specs = experiment_dict[experiment]
 db_to_act_on = experiment_specs["db_to_act_on"]
@@ -30,7 +31,8 @@ experiment_specs["encoding_func"](db_to_act_on)
 print("Encodings computed in :", time()-t_start)
 
 
-# from informed_anomaly_detection.visualisation import generate_plots_for_proof_of_concept
+from informed_anomaly_detection.visualisation.visualisation_pipeline import make_plots
+make_plots(db_to_act_on,"/home/douwm/projects/PhD/code/informed_anomaly_detection/reports/plots",export_pdf=False,)
 
 # t_start = time()
 # main_metric()

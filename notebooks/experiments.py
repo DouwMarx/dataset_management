@@ -33,7 +33,7 @@ experiments ={
    "encoding_func": enc_main
    },
 
- "phenomenological_rapid":
+ "phenomenological_rapid0":
   {"db_to_act_on": "phenomenological_rapid",
    "raw_func": pm_raw,
    "process_func": process_pm,
