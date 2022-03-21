@@ -4,6 +4,7 @@ from dataset_management.general.update_database_with_augmented import main as au
 from dataset_management.general.update_database_with_models import main as mod_main
 from dataset_management.general.update_database_with_encodings import main as enc_main
 from dataset_management.general.update_database_with_models import train_ims_models
+from dataset_management.general.update_database_with_models import train_phenomenological_perfect_augmentation
 
 experiments ={
  "ims_rapid1_t2_c1_outer":
@@ -48,6 +49,15 @@ experiments ={
    "process_func": process_pm,
    "augment_func": aug_main,
    "model_func": train_ims_models,
+   "encoding_func": enc_main
+   },
+
+ "phenomenological_perfect_augmentation":
+  {"db_to_act_on": "phenomenological",
+   "raw_func": pm_raw,
+   "process_func": process_pm,
+   "augment_func": aug_main,
+   "model_func": train_phenomenological_perfect_augmentation,
    "encoding_func": enc_main
    },
 
