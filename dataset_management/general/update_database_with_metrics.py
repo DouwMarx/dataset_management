@@ -172,22 +172,18 @@ class EncodingMovementMetrics(object):
 #
 # tup = a.get_metrics_for_failure_direction_projection(encoding_example,"ball")
 
-def main():
-    db_to_act_on = "phenomenological"
+def main(db_to_act_on):
     db, client = make_db(db_to_act_on)
     db["metrics"].delete_many({})
-
     # Compute the metrics
-    # model_used = "healthy_only_pca"
     for model_used in db["encoding"].distinct("model_used"):
-        print(model_used)
+        print("Computing metrics for model: ", model_used)
         query = {"augmented": False, "model_used": model_used}  # Applying metrics only to non-augmented data
         em_obj = EncodingMovementMetrics(model_used, db_to_act_on)
-        # models: encoding.distinct("model_used")
         DerivedDoc(query, "encoding", "metrics", em_obj.compute_metrics_from_doc,db_to_act_on).update_database(parallel=False)
-    # return db["metrics"]
     return db
 
 
 if __name__ == "__main__":
-    r = main()
+    db_to_act_on = "phenomenological"
+    r = main(db_to_act_on)

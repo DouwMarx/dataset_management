@@ -5,6 +5,7 @@ from dataset_management.general.update_database_with_models import main as mod_m
 from dataset_management.general.update_database_with_encodings import main as enc_main
 from dataset_management.general.update_database_with_models import train_ims_models
 from dataset_management.general.update_database_with_models import train_phenomenological_perfect_augmentation
+from dataset_management.general.update_database_with_metrics import main as metric_main
 
 experiments ={
  "ims_rapid1_t2_c1_outer":
@@ -13,7 +14,8 @@ experiments ={
    "process_func": process_ims,
    "augment_func": aug_main,
    "model_func": train_ims_models,
-   "encoding_func": enc_main
+   "encoding_func": enc_main,
+   "metric_func":metric_main
    },
 
  "ims_rapid2_t2_c1_outer":
@@ -22,7 +24,8 @@ experiments ={
    "process_func": process_ims,
    "augment_func": aug_main,
    "model_func": train_ims_models,
-   "encoding_func": enc_main
+   "encoding_func": enc_main,
+   "metric_func":metric_main
    },
 
  "ims_t2_c1_outer":
@@ -31,7 +34,8 @@ experiments ={
    "process_func": process_ims,
    "augment_func": aug_main,
    "model_func": train_ims_models,
-   "encoding_func": enc_main
+   "encoding_func": enc_main,
+   "metric_func":metric_main
    },
 
  "phenomenological_rapid0":
@@ -40,7 +44,8 @@ experiments ={
    "process_func": process_pm,
    "augment_func": aug_main,
    "model_func": train_ims_models,
-   "encoding_func": enc_main
+   "encoding_func": enc_main,
+   "metric_func":metric_main
    },
 
  "phenomenological":
@@ -49,7 +54,8 @@ experiments ={
    "process_func": process_pm,
    "augment_func": aug_main,
    "model_func": train_ims_models,
-   "encoding_func": enc_main
+   "encoding_func": enc_main,
+   "metric_func":metric_main
    },
 
  "phenomenological_perfect_augmentation":
@@ -58,7 +64,8 @@ experiments ={
    "process_func": process_pm,
    "augment_func": aug_main,
    "model_func": train_phenomenological_perfect_augmentation,
-   "encoding_func": enc_main
+   "encoding_func": enc_main,
+   "metric_func":metric_main
    },
 
  # "phenomenological_rapid":
