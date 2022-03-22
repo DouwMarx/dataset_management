@@ -120,7 +120,7 @@ def new_docs_from_computed(doc, list_of_computed_dicts):
     # Transfer some of information from the source document
 
     updated_dicts = []
-    to_transfer = ["mode", "severity", "meta_data", "ims", 'record_number', 'ims_test_number', 'ims_channel_number']
+    to_transfer = ["mode", "severity", "meta_data", "ims", 'record_number', 'ims_test_number', 'ims_channel_number',"set","model_used"]
     for computed_dict in list_of_computed_dicts:
         # new_doc = {"mode": doc["mode"],
         #            "severity": doc["severity"],

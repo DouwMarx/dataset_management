@@ -14,6 +14,9 @@ class Encoding():
         torch_query = self.model_query.copy().update({"implementation":"torch"})
         self.torch_docs = list(self.db["model"].find(torch_query))
         self.torch_models = [torch.load(model["path"]).to("cpu") for model in self.torch_docs]
+
+        print("model specs:")
+        print(self.torch_models[0])
         self.augmented = augmented
 
         # sklearn_query = self.model_query.copy().update({"implementation":"sklearn"})

@@ -29,7 +29,7 @@ def train_phenomenological_perfect_augmentation(db_to_act_on):
     db, client = make_db(db_to_act_on)
     db["model"].delete_many({})
 
-    torch_models = [get_trained_latent_separation_model_perfect_augmentation(db_to_act_on,batch_size=2,num_epochs=100)
+    torch_models = [get_trained_latent_separation_model_perfect_augmentation(db_to_act_on,batch_size=2,num_epochs=30)
                     ]
     implementation = "torch"
     for model in torch_models:
