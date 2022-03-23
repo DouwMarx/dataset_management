@@ -43,6 +43,7 @@ def main(db_to_act_on):
     #
     # else:
     #     return pm_main(db_to_act_on)
+    # Main is currently evaluating the test train split functionality
     test_train_split(db_to_act_on)
 
 if __name__ == "__main__":

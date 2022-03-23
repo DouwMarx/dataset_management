@@ -108,7 +108,7 @@ class IMSTest(object):
                "meta_data": self.ims_meta_data,
                "time_series": list(time_series_data),
                "time_stamp": time_stamp,
-               "record_number": record_number,
+               "record_number": int(record_number),
                "augmented": False,
                "ims_test_number": self.folder_name[0],  # First string of folder name
                "ims_channel_number": str(int(channel_id + 1))  # IMS convention is 1-based channel numbering
@@ -158,6 +158,15 @@ class IMSTest(object):
             batch_ids = range(0, self.n_records, n_per_batch)
 
         # TODO: Add the test functionality here to make it around the healhty damage treshold
+
+        # This ensures that all data is first dropped for a certain dataset (channel) before adding data.
+        for channel in self.channel_names:
+            db_name = target_db_root+ "_test"+ self.folder_name[0]+ "_" + channel
+            db, client = make_db(db_name)
+            for name in db.collection_names():
+                db.drop_collection(name)
+                print("Dumped data for dataset {}, collection {}".format(db_name,name))
+
         for batch_start in tqdm(batch_ids):
             batch_result = [process(sample_name) for sample_name in
                             self.measurement_paths[batch_start:batch_start + n_per_batch]]
@@ -167,6 +176,8 @@ class IMSTest(object):
                 db, client = make_db(target_db_root+ "_test"+ self.folder_name[0]+ "_" + channel)
                 db["raw"].insert_many(docs)
                 client.close()
+
+
 
     def serial(self):
         return [self.create_document_per_channel(path) for path in tqdm(self.measurement_paths[0:100])]
@@ -204,5 +215,6 @@ def main(db_to_act_on):
 
 
 if __name__ == "__main__":
-    main("ims")
+    # main("ims")
+    main("ims_rapid1")
     # main("ims")
