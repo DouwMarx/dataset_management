@@ -5,9 +5,9 @@ from time import time
 from database_definitions import make_db
 
 # experiment = "ims_rapid2_t2_c1_outer"
-experiment = "ims_t2_c1_outer"
+# experiment = "ims_t2_c1_outer"
 # experiment = "phenomenological_rapid0"
-# experiment = "phenomenological"
+experiment = "phenomenological"
 # experiment = "phenomenological_perfect_augmentation"
 
 experiment_specs = experiment_dict[experiment]
@@ -24,7 +24,7 @@ db_to_act_on = experiment_specs["db_to_act_on"]
 # t_start = time()
 # experiment_specs["augment_func"](db_to_act_on)
 # print("augmented data updated in :", time()-t_start)
-#
+
 t_start = time()
 experiment_specs["model_func"](db_to_act_on)
 print("Models trained in :", time()-t_start)

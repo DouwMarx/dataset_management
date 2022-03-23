@@ -39,7 +39,7 @@ experiments ={
    },
 
  "phenomenological_rapid0":
-  {"db_to_act_on": "phenomenological_rapid",
+  {"db_to_act_on": "phenomenological_rapid0",
    "raw_func": pm_raw,
    "process_func": process_pm,
    "augment_func": aug_main,

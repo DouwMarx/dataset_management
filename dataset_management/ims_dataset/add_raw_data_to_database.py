@@ -216,5 +216,5 @@ def main(db_to_act_on):
 
 if __name__ == "__main__":
     # main("ims")
-    main("ims_rapid1")
-    # main("ims")
+    # main("ims_rapid1")
+    main("ims")
