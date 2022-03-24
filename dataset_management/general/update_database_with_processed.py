@@ -96,20 +96,19 @@ class ProcessData():
     # upper = 3750 + 312
     # lower = 3750 - 312
 
-
-def process_ims(db_to_act_on):
+def process_no_bandpass(db_to_act_on):
     db,client = make_db(db_to_act_on)
     db["processed"].delete_many({})
-    bandpass = True
+    bandpass = False
     to_apply = ProcessData(db_to_act_on, bandpass=bandpass).compute_features_from_time_series_doc
     query = {"time_series": {"$exists": True}}# Process the time data
     DerivedDoc(query, "raw", "processed", to_apply,db_to_act_on).update_database(parallel=False)
     return db["processed"]
 
-def process_pm(db_to_act_on):
-    db, client = make_db(db_to_act_on)
+def process_bandpass(db_to_act_on):
+    db,client = make_db(db_to_act_on)
     db["processed"].delete_many({})
-    bandpass = False
+    bandpass = True
     to_apply = ProcessData(db_to_act_on, bandpass=bandpass).compute_features_from_time_series_doc
     query = {"time_series": {"$exists": True}}# Process the time data
     DerivedDoc(query, "raw", "processed", to_apply,db_to_act_on).update_database(parallel=False)
@@ -120,10 +119,7 @@ def main(db_to_act_on):
     db,client = make_db(db_to_act_on)
     db["processed"].delete_many({})
 
-    if db_to_act_on in ["ims","ims_test"]:
-        bandpass = True
-    else:
-        bandpass = False
+    bandpass = False
 
     to_apply = ProcessData(db_to_act_on, bandpass=bandpass).compute_features_from_time_series_doc
     # Process the time data

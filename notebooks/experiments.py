@@ -1,5 +1,5 @@
 from dataset_management.general.update_database_with_raw import ims_raw,pm_raw
-from dataset_management.general.update_database_with_processed import process_ims,process_pm
+from dataset_management.general.update_database_with_processed import process_bandpass #process_ims,process_pm
 from dataset_management.general.update_database_with_augmented import main as aug_main
 from dataset_management.general.update_database_with_models import main as mod_main
 from dataset_management.general.update_database_with_encodings import main as enc_main
@@ -8,10 +8,20 @@ from dataset_management.general.update_database_with_models import train_phenome
 from dataset_management.general.update_database_with_metrics import main as metric_main
 
 experiments ={
+ "ims_rapid0_t2_c1_outer":
+  {"db_to_act_on": "ims_rapid1_test2_bearing1_channel1",
+   "raw_func": ims_raw,
+   "process_func": process_bandpass,
+   "augment_func": aug_main,
+   "model_func": train_ims_models,
+   "encoding_func": enc_main,
+   "metric_func":metric_main
+   },
+
  "ims_rapid1_t2_c1_outer":
   {"db_to_act_on": "ims_rapid1_test2_bearing1_channel1",
    "raw_func": ims_raw,
-   "process_func": process_ims,
+   "process_func": process_bandpass,
    "augment_func": aug_main,
    "model_func": train_ims_models,
    "encoding_func": enc_main,
@@ -21,7 +31,7 @@ experiments ={
  "ims_rapid2_t2_c1_outer":
   {"db_to_act_on": "ims_rapid2_test2_bearing1_channel1",
    "raw_func": ims_raw,
-   "process_func": process_ims,
+   "process_func": process_bandpass,
    "augment_func": aug_main,
    "model_func": train_ims_models,
    "encoding_func": enc_main,
@@ -31,7 +41,7 @@ experiments ={
  "ims_t2_c1_outer":
   {"db_to_act_on": "ims_test2_bearing1_channel1",
    "raw_func": ims_raw,
-   "process_func": process_ims,
+   "process_func": process_bandpass,
    "augment_func": aug_main,
    "model_func": train_ims_models,
    "encoding_func": enc_main,
@@ -41,7 +51,7 @@ experiments ={
  "phenomenological_rapid0":
   {"db_to_act_on": "phenomenological_rapid0",
    "raw_func": pm_raw,
-   "process_func": process_pm,
+   "process_func": process_bandpass,
    "augment_func": aug_main,
    "model_func": train_ims_models,
    "encoding_func": enc_main,
@@ -51,7 +61,7 @@ experiments ={
  "phenomenological":
   {"db_to_act_on": "phenomenological",
    "raw_func": pm_raw,
-   "process_func": process_pm,
+   "process_func": process_bandpass,
    "augment_func": aug_main,
    "model_func": train_ims_models,
    "encoding_func": enc_main,
@@ -61,7 +71,7 @@ experiments ={
  "phenomenological_perfect_augmentation":
   {"db_to_act_on": "phenomenological",
    "raw_func": pm_raw,
-   "process_func": process_pm,
+   "process_func": process_bandpass,
    "augment_func": aug_main,
    "model_func": train_phenomenological_perfect_augmentation,
    "encoding_func": enc_main,

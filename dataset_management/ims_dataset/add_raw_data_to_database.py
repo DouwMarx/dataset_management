@@ -1,4 +1,3 @@
-# Usefull snippets from kaggle page https://www.kaggle.com/furkancitil/nasa-bearing-dataset-rul-predictionk
 import itertools
 import pickle
 import random
@@ -13,6 +12,7 @@ from pypm.phenomenological_bearing_model.bearing_model import Bearing
 from multiprocessing import Pool
 from tqdm import tqdm
 from time import time
+from dataset_management.ultils.mongo_test_train_split import test_train_split
 
 
 class IMSTest(object):
@@ -177,6 +177,12 @@ class IMSTest(object):
                 db["raw"].insert_many(docs)
                 client.close()
 
+        # This splits the data into train and test sets. It is done here since separate datasets are created for the same test
+        for channel in self.channel_names:
+            db_name = target_db_root+ "_test"+ self.folder_name[0]+ "_" + channel
+            print("Applying test train split on " +db_name)
+            test_train_split(db_name)
+
 
 
     def serial(self):
@@ -186,23 +192,27 @@ class IMSTest(object):
 
 def main(db_to_act_on):
     from dataset_management.ims_dataset.experiment_meta_data import channel_info
-    db, client = make_db(db_to_act_on)
+    # db, client = make_db(db_to_act_on)
 
-    for name in db.collection_names():
-        db.drop_collection(name)
+    # for name in db.collection_names():
+    #     db.drop_collection(name)
+    #
+    # db, client = make_db(db_to_act_on)
+    # # First clear out the database
+    # db["raw"].delete_many({})
+    # print("Dumped existing data")
 
-    db, client = make_db(db_to_act_on)
-    # First clear out the database
-    db["raw"].delete_many({})
-    print("Dumped existing data")
+    # for name in db.collection_names():
+    #     db.drop_collection(name)
 
-    for name in db.collection_names():
-        db.drop_collection(name)
 
     if "rapid" in db_to_act_on:
-        rapid_level = db_to_act_on[-1] # Take the rapid number from the db name 0 is very rapid, 1 is mildly rapid
+        rapid_level = "0"#db_to_act_on[-1] # Take the rapid number from the db name 0 is very rapid, 1 is mildly rapid
 
+        db_to_act_on = "ims_rapid" + rapid_level # Notice that db to act on is rewritten here because the dataset is split automatically by the raw procesing
+        print("running rapid")
     else:
+        db_to_act_on = "ims" # Notice that db to act on is rewritten here because the dataset is split automatically by the raw procesing
         rapid_level = None
 
     folders_for_different_tests = ["1st_test", "2nd_test", "3rd_test/txt"]  # Each folder has text files with the data
@@ -211,7 +221,7 @@ def main(db_to_act_on):
         test_obj = IMSTest(folder, channel_info, rapid_level = rapid_level)
         test_obj.add_to_db(db_to_act_on)
         print("Done with one folder")
-    return db
+    return "nothing"
 
 
 if __name__ == "__main__":
