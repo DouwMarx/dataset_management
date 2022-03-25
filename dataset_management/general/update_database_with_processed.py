@@ -46,7 +46,7 @@ def compute_features_from_time_series_doc(doc):
 
     # Important: Notice that the DC gain is removed here
     envelope_spectrum = {"envelope_spectrum": {"freq": list(limit_frequency_components(freq)),
-                                                            "mag": list(limit_frequency_components(mag)),
+                                                            "mag": list(limit_frequency_components(mag**2)), # Notice that the squared envelope is used
                                                             "phase": list(limit_frequency_components(phase))
                                                             },
                          "augmented": doc["augmented"]

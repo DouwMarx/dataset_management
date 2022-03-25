@@ -19,6 +19,17 @@ experiments ={
    "metric_func":metric_main
    },
 
+ # IMS test 1 bearing 4:  Roller fault
+ "ims_t1_b4_ball":
+  {"db_to_act_on": "ims_test1_bearing4_channel1",
+   "raw_func": ims_raw,
+   "process_func": process_no_bandpass,
+   "augment_func": aug_main,
+   "model_func": train_ims_models,
+   "encoding_func": enc_main,
+   "metric_func": metric_main
+   },
+
  # IMS test 2 channel 1: Outer faults
  "ims_rapid0_t2_c1_outer":
   {"db_to_act_on": "ims_rapid1_test2_bearing1_channel1",
@@ -48,6 +59,17 @@ experiments ={
    "model_func": train_ims_models,
    "encoding_func": enc_main,
    "metric_func":metric_main
+   },
+
+ # IMS test 3 bearing 3:  Outer fault
+ "ims_t3_b3_outer":
+  {"db_to_act_on": "ims_test3_bearing3_channel3",
+   "raw_func": ims_raw,
+   "process_func": process_no_bandpass,
+   "augment_func": aug_main,
+   "model_func": train_ims_models,
+   "encoding_func": enc_main,
+   "metric_func": metric_main
    },
 
  # Phenomenological experiments

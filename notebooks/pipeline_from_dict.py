@@ -7,7 +7,7 @@ from informed_anomaly_detection.visualisation.visualisation_pipeline import make
 
 # meeting_path = Path("/home/douwm/projects/PhD/reports/meetings/20220321_informed_anomaly_detection_on_ims/20220321_beamer/images")
 # plots_path = Path("/home/douwm/projects/PhD/code/informed_anomaly_detection/reports/plots")
-phme_report_path = Path("/home/douwm/projects/PhD/reports/conferences/PHME2022/paper_tex/src/images")
+phme_report_path = Path("/home/douwm/projects/PhD/reports/conferences/PHME2022/paper_tex/src/images/plots")
 
 
 # experiment = "ims_rapid1_t2_c1_outer"
@@ -15,9 +15,13 @@ phme_report_path = Path("/home/douwm/projects/PhD/reports/conferences/PHME2022/p
 # experiment = "phenomenological_rapid0"
 # experiment = "phenomenological_perfect_augmentation"
 
-experiment = "ims_t2_c1_outer"
+experiment = "phenomenological"
+
+# experiment = "ims_t2_c1_outer"
 # experiment = "ims_t1_b3_inner"
-# experiment = "phenomenological"
+# experiment = "ims_t1_b4_ball"
+# experiment = "ims_t3_b3_outer"
+
 experiment_specs = experiment_dict[experiment]
 db_to_act_on = experiment_specs["db_to_act_on"]
 
@@ -68,10 +72,14 @@ def main(to_run):
         run_dict[func_to_run]()
 
 if __name__ == "__main__":
+    # if sys.argv[1] == 0:
+    # main(["raw"])
     # main(["process","augment"])
-    main(["models","encodings","metrics","plots"])
 
-#
-# a = int(sys.argv[1])
-# b = int(sys.argv[2])
+    # main(["models","encodings","metrics","plots"])
+
+    # main(["models","encodings","metrics"])
+    main(["metrics","plots"])
+    # main(["plots"])
+
 

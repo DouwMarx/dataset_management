@@ -13,7 +13,7 @@ class EncodingMovementMetrics(object):
         self.db, self.client = make_db(db_to_act_on)
         self.expected_failure_modes = self.db["encoding"].distinct("mode", {
             "augmented": True})  # What are the potential modes that have been accounted for in the augmentation.
-        self.max_severity = self.db['augmented'].distinct("severity")[-1]
+        self.max_severity = 10#self.db['encoding'].distinct("severity")[-1]
 
         # Get examples of healthy and damaged data
         self.healthy_encoding = self.get_healthy_encoding_examples()
@@ -22,26 +22,50 @@ class EncodingMovementMetrics(object):
 
         # Get the medians of the healthy and damaged distributions so that the failure directions can be computed
         self.healthy_encoding_median = np.median(self.healthy_encoding, axis=0)
-        self.severe_augmented_data_median_per_mode = {key: np.median(val, axis=0) for key, val in
+        self.severe_augmented_data_median_per_mode = {key: list(np.median(val, axis=0)) for key, val in
                                                       self.severe_augmented_data_examples_per_mode.items()}
 
+        # Get the position of a severely damaged sample so arrows can be drawn in latent space
+        measured_severe_encoding_per_mode = {mode: self.get_severe_measured_data_example(mode) for mode in
+                                             self.expected_failure_modes}
+        measured_severe_encoding_median = {key: np.median(val, axis=0) for key, val in
+                                           measured_severe_encoding_per_mode.items()}
+
+        distance_healthy_to_severe_augmented_per_mode = {key: np.linalg.norm(
+            np.array(self.healthy_encoding_median) - np.array(self.severe_augmented_data_median_per_mode[key])) for key
+                                                         in self.expected_failure_modes}
+        distance_healthy_to_severe_measured_per_mode = {
+            key: np.linalg.norm(np.array(self.healthy_encoding_median) - np.array(measured_severe_encoding_median[key]))
+            for key in self.expected_failure_modes}
+
+        # print(distance_healthy_to_severe_measured_per_mode)
+
         # Get the expected failure directions
-        self.expected_failure_directions_per_mode = {mode: self.get_expected_failure_direction(mode) for mode in
+        self.expected_failure_directions_per_mode = {mode: list(self.get_expected_failure_direction(mode)) for mode in
                                                      self.expected_failure_modes}
 
         # Get the healthy projections onto the failure directions
         self.healthy_projection_per_mode = {
-            mode:self.get_projection_onto_failure_direction(self.healthy_encoding,
-                                                            self.expected_failure_directions_per_mode[mode])
+            mode: self.get_projection_onto_failure_direction(self.healthy_encoding,
+                                                             self.expected_failure_directions_per_mode[mode])
             for mode in self.expected_failure_modes}
-
 
         self.fitted_healthy_projection_per_mode = {}
         for mode in self.expected_failure_modes:
-            mu,std = norm.fit(self.healthy_projection_per_mode[mode])
-            self.fitted_healthy_projection_per_mode.update({mode:{"mu":mu,
-                                                                 "std":std}})
+            mu, std = norm.fit(self.healthy_projection_per_mode[mode])
+            self.fitted_healthy_projection_per_mode.update({mode: {"mu": mu,
+                                                                   "std": std}})
 
+        self.db["meta_data"].replace_one({'_id': 'meta_data'},
+                                         {
+                                             '_id': 'meta_data',
+                                             "healthy_encoding_median": list(self.healthy_encoding_median),
+                                             "expected_failure_directions": self.expected_failure_directions_per_mode,
+                                             "severe_augmented_median": self.severe_augmented_data_median_per_mode,
+                                             "distance_healthy_to_severe": distance_healthy_to_severe_measured_per_mode,
+                                             "distance_healthy_to_augmented":distance_healthy_to_severe_augmented_per_mode
+                                         },
+                                         upsert=True)
 
     def check_latent_constraints(self):
         """
@@ -80,6 +104,26 @@ class EncodingMovementMetrics(object):
 
         return severe_augmented_encodings
 
+    def get_severe_measured_data_example(self, expected_mode):
+        # Get an example of what we expect severe failure would look like for each failure mode
+        severe_measured_encodings = [enc["encoding"] for enc in self.db["encoding"].find(
+            {
+                "severity": self.max_severity,
+                "augmented": False,
+                "mode": expected_mode,
+                "model_used": self.model_used,
+            }
+        )]
+
+        if len(severe_measured_encodings) == 0:
+            print("No severe measured encoding documents found")
+        else:
+            print(
+                "Making use of {} severe measured samples for mode {}".format(len(severe_measured_encodings),
+                                                                              expected_mode))
+
+        return np.vstack(severe_measured_encodings)
+
     def get_healthy_encoding_examples(self):
         # Get example of healthy data encoding for the same mode as the doc (Note that healthy data is not strictly associated with a given mode"
         all_healthy_encoding = [enc["encoding"] for enc in self.db["encoding"].find({
@@ -110,11 +154,12 @@ class EncodingMovementMetrics(object):
 
     def get_metrics_for_failure_direction_projection(self, measured_encoding, expected_mode):
 
-        measured_projection = self.get_projection_onto_failure_direction(measured_encoding,self.expected_failure_directions_per_mode[expected_mode])
+        measured_projection = self.get_projection_onto_failure_direction(measured_encoding,
+                                                                         self.expected_failure_directions_per_mode[
+                                                                             expected_mode])
         mu = self.fitted_healthy_projection_per_mode[expected_mode]["mu"]
         std = self.fitted_healthy_projection_per_mode[expected_mode]["std"]
         p = norm.pdf(measured_projection, mu, std)
-
 
         # Computation of the AUC cannot be done on a per saple basis?
         # sample_likelihood_measured = norm(healthy_mean, healthy_sd).pdf(measured_projection)
@@ -146,7 +191,10 @@ class EncodingMovementMetrics(object):
             #  Set up a dictionary of computed metrics
             metrics_dict = {
                 "expected_mode": expected_mode,
-                # "damage_direction": list(normalized_direction_healthy_to_augmented),
+                # "expected_failure_direction": self.expected_failure_directions_per_mode[expected_mode],
+                # Store the expected failure directions for the trained model. Notice that this information will be duplicated accross metrics
+                "healthy_encoding_median": list(self.healthy_encoding_median),
+                # Store the healthy encoding median for plotting. Notice that this information is being duplicated.
                 "measured_projection_in_fault_direction": measured_projection,
                 # "healthy_projection_in_fault_direction": list(healthy_projection),
                 "p": p,
@@ -180,7 +228,8 @@ def main(db_to_act_on):
         print("Computing metrics for model: ", model_used)
         query = {"augmented": False, "model_used": model_used}  # Applying metrics only to non-augmented data
         em_obj = EncodingMovementMetrics(model_used, db_to_act_on)
-        DerivedDoc(query, "encoding", "metrics", em_obj.compute_metrics_from_doc,db_to_act_on).update_database(parallel=False)
+        DerivedDoc(query, "encoding", "metrics", em_obj.compute_metrics_from_doc, db_to_act_on).update_database(
+            parallel=False)
     return db
 
 

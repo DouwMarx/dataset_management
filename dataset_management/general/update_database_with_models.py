@@ -8,7 +8,7 @@ def train_ims_models(db_to_act_on):
     db, client = make_db(db_to_act_on)
     db["model"].delete_many({})
 
-    torch_models = [get_trained_latent_separation_model(db_to_act_on,batch_size=16,num_epochs=30)
+    torch_models = [get_trained_latent_separation_model(db_to_act_on,batch_size=16,num_epochs=30,bottle_neck_size=3)
                     ]
     implementation = "torch"
     for model in torch_models:
