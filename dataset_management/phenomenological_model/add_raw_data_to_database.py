@@ -59,7 +59,7 @@ def build_phenomenological_database_linear_sev(db_to_act_on, n_health = 10, n_te
     # print(db["raw"].count_documents({}))
 
     # o = PyBearingDataset(n_severities=n_severities, failure_modes=["ball", "inner", "outer"],quick_iter=rapid)
-    o = LinearSeverityIncreaseDataset(n_test_samples=n_test,n_healthy_samples=n_health,failure_modes=["ball", "inner", "outer"],quick_iter=rapid,parallel_evaluate=True)
+    o = LinearSeverityIncreaseDataset(n_test_samples=n_test,n_healthy_samples=n_health,failure_modes=["ball", "inner", "outer"],quick_iter=rapid,parallel_evaluate=False)
 
     result_docs = o.make_measurements_for_different_failure_mode()
 
@@ -72,18 +72,30 @@ def build_phenomenological_database_linear_sev(db_to_act_on, n_health = 10, n_te
 
     bearing_geom_obj = Bearing(d, D, contact_angle, n_ball)
 
-
-    # Pack the bearing dataset into the database
-    for doc in result_docs:
-        db, client = make_db(db_to_act_on)
+    # Get the documents ready for adding to the database
+    for i, doc in enumerate(result_docs):
         meta_data = doc["meta_data"]
         expected_fault_frequencies_dict = {"expected_fault_frequencies": {fault_type: bearing_geom_obj.get_expected_fault_frequency(fault_type, meta_data["mean_rotation_frequency"]) for
-            fault_type in ["ball", "outer", "inner"]}}
+                                                                          fault_type in ["ball", "outer", "inner"]}}
         meta_data.update(expected_fault_frequencies_dict)
         doc.update({"meta_data":meta_data})
 
-        db["raw"].insert(doc)  # Insert document into the collection
-        client.close()
+        result_docs[i] = doc
+
+    db, client = make_db(db_to_act_on)
+    db["raw"].insert_many(result_docs)
+
+    # # Pack the bearing dataset into the database
+    # for doc in result_docs:
+    #     db, client = make_db(db_to_act_on)
+    #     meta_data = doc["meta_data"]
+    #     expected_fault_frequencies_dict = {"expected_fault_frequencies": {fault_type: bearing_geom_obj.get_expected_fault_frequency(fault_type, meta_data["mean_rotation_frequency"]) for
+    #         fault_type in ["ball", "outer", "inner"]}}
+    #     meta_data.update(expected_fault_frequencies_dict)
+    #     doc.update({"meta_data":meta_data})
+    #
+    #     db["raw"].insert(doc)  # Insert document into the collection
+    #     client.close()
 
     print("Number of raw documents added: ",db["raw"].count_documents({}))
 
@@ -96,8 +108,8 @@ def main(db_to_act_on):
         n_test = 50
         rapid = True
     else:
-        n_health = 100
-        n_test =  100
+        n_health = 500
+        n_test =  50
         rapid = False
 
     # fd = build_phenomenological_database(db_to_act_on,n_severities=sevs, rapid=rapid)

@@ -13,6 +13,9 @@ class EncodingMovementMetrics(object):
         self.db, self.client = make_db(db_to_act_on)
         self.expected_failure_modes = self.db["encoding"].distinct("mode", {
             "augmented": True})  # What are the potential modes that have been accounted for in the augmentation.
+
+        self.actual_failure_modes = [mode for mode in self.db["encoding"].distinct("mode", {"augmented": False}) if mode is not None]
+
         self.max_severity = 10#self.db['encoding'].distinct("severity")[-1]
 
         # Get examples of healthy and damaged data
@@ -27,7 +30,7 @@ class EncodingMovementMetrics(object):
 
         # Get the position of a severely damaged sample so arrows can be drawn in latent space
         measured_severe_encoding_per_mode = {mode: self.get_severe_measured_data_example(mode) for mode in
-                                             self.expected_failure_modes}
+                                             self.actual_failure_modes}
         measured_severe_encoding_median = {key: np.median(val, axis=0) for key, val in
                                            measured_severe_encoding_per_mode.items()}
 
@@ -36,7 +39,7 @@ class EncodingMovementMetrics(object):
                                                          in self.expected_failure_modes}
         distance_healthy_to_severe_measured_per_mode = {
             key: np.linalg.norm(np.array(self.healthy_encoding_median) - np.array(measured_severe_encoding_median[key]))
-            for key in self.expected_failure_modes}
+            for key in self.actual_failure_modes}
 
         # print(distance_healthy_to_severe_measured_per_mode)
 
@@ -117,6 +120,9 @@ class EncodingMovementMetrics(object):
 
         if len(severe_measured_encodings) == 0:
             print("No severe measured encoding documents found")
+            print("max sev",self.max_severity)
+            print("expected_mode", expected_mode)
+            print("model_used", self.model_used)
         else:
             print(
                 "Making use of {} severe measured samples for mode {}".format(len(severe_measured_encodings),
@@ -159,7 +165,10 @@ class EncodingMovementMetrics(object):
                                                                              expected_mode])
         mu = self.fitted_healthy_projection_per_mode[expected_mode]["mu"]
         std = self.fitted_healthy_projection_per_mode[expected_mode]["std"]
-        p = norm.pdf(measured_projection, mu, std)
+        if measured_projection>mu:
+            p = norm.pdf(measured_projection, mu, std)
+        else:
+            p = norm.pdf(mu, mu, std)
 
         # Computation of the AUC cannot be done on a per saple basis?
         # sample_likelihood_measured = norm(healthy_mean, healthy_sd).pdf(measured_projection)

@@ -81,7 +81,7 @@ class Augmentation():
                                 fault_frequency=expected_fault_frequency,
                                 # peak_magnitude=0.04,  # max_amplitude,#
                                 peak_magnitude= peak_mag,  # max_amplitude,#
-                                decay_percentage_over_interval=0.9
+                                decay_percentage_over_interval=0.999
                                 )  # TODO: Fix peak magnitude, providing augmentation parameters?
 
             augmented_envelope_spectrum = ases.get_augmented_ses()
