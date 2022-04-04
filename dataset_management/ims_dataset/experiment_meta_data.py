@@ -57,25 +57,25 @@ channel_info_test_2 = [
     {
         "measurement_name": "bearing1_channel1",
         "mode": "outer",
-        "healthy_records": [10,100]
+        "healthy_records": [50, 300]
     },
 
     {
         "measurement_name": "bearing2_channel2",
         "mode": None,
-        "healthy_records": [10, 100]
+        "healthy_records": [50, 300]
     },
 
     {
         "measurement_name": "bearing3_channel3",
         "mode": None,
-        "healthy_records": [10, 100]
+        "healthy_records": [50, 300]
     },
 
     {
         "measurement_name": "bearing4_channel4",
         "mode": None,
-        "healthy_records": [10, 100]
+        "healthy_records": [50, 300]
     },
 ]
 
@@ -83,25 +83,25 @@ channel_info_test_3 = [
     {
         "measurement_name": "bearing1_channel1",
         "mode": None,
-        "healthy_records": [200,600]
+        "healthy_records": [280,1500]
     },
 
     {
         "measurement_name": "bearing2_channel2",
         "mode": None,
-        "healthy_records": [200,600]
+        "healthy_records": [280,1500]
     },
 
     {
         "measurement_name": "bearing3_channel3",
         "mode": "outer",
-        "healthy_records": [200,600]
+        "healthy_records": [280,1500]
     },
 
     {
         "measurement_name": "bearing4_channel4",
         "mode": None,
-        "healthy_records": [200,600]
+        "healthy_records": [280,1500]
     },
 ]
 

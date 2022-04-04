@@ -7,16 +7,17 @@ from informed_anomaly_detection.visualisation.visualisation_pipeline import make
 
 # meeting_path = Path("/home/douwm/projects/PhD/reports/meetings/20220321_informed_anomaly_detection_on_ims/20220321_beamer/images")
 # plots_path = Path("/home/douwm/projects/PhD/code/informed_anomaly_detection/reports/plots")
-phme_report_path = Path("/home/douwm/projects/PhD/reports/conferences/PHME2022/paper_tex/src/images/plots")
+# phme_report_path = Path("/home/douwm/projects/PhD/reports/conferences/PHME2022/paper_tex/src/images/plots")
+phme_report_path = Path("/home/douwm/projects/PhD/reports/conferences/PHME2022/marx_gryllias_domain_knowlege_informed_unsupervised/src/Figures/plots")
 
 # experiment = "ims_rapid1_t2_c1_outer"
 # experiment = "ims_rapid0_t2_c1_outer"
 # experiment = "phenomenological_rapid0"
 # experiment = "phenomenological_perfect_augmentation"
 
-experiment = "phenomenological"
+# experiment = "phenomenological"
 
-# experiment = "ims_t2_c1_outer"
+experiment = "ims_t2_c1_outer"
 # experiment = "ims_t1_b3_inner"
 # experiment = "ims_t1_b4_ball"
 # experiment = "ims_t3_b3_outer"
@@ -85,7 +86,7 @@ if __name__ == "__main__":
     # main(["raw"])
     # main(["process","augment"])
 
-    main(["models","encodings","metrics","plots"])
+    main(["models", "encodings", "metrics", "plots"])
 
     # main(["models","encodings","metrics"])
     # main(["metrics","plots"])
