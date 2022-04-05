@@ -24,7 +24,7 @@ class Augmentation():
                  "mode": mode
                  }).sort("severity", direction=-1).limit(
                 20)  # Use the final 20 documents to estimate the maximum severity
-            env_spec_max = [np.max(doc["envelope_spectrum"]["mag"]) for doc in docs]
+            env_spec_max = [np.max(doc["envelope_spectrum"]["mag"][100:]) for doc in docs]
             self.env_spec_max_for_mode.update({mode: np.median(env_spec_max)})
 
     def compute_augmentation_from_healthy_feature_doc(self, doc):
@@ -59,7 +59,7 @@ class Augmentation():
 
         augmented_doc_for_mode = []
         # Loop through the different failure modes that could appear
-        ases = AugmentedEnvelopeImprovedTriangular(healthy_envelope_spectrum_freq,)
+        ases = AugmentedEnvelopeImprovedTriangular(healthy_envelope_spectrum_freq,alpha=1e-3,traingle_base=30) # 30Hz traingle base
         for fault_mode in ["ball", "inner", "outer"]:
             expected_fault_frequency = expected_fault_frequency_for_mode[fault_mode]
 

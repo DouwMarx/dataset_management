@@ -27,7 +27,10 @@ def limit_frequency_components(arr, fraction_of_spectrum_to_use=0.1):
 
 
 def compute_features_from_time_series_doc(doc):
-    signal = np.array(doc["time_series"])  
+    signal = np.array(doc["time_series"])
+
+    signal = signal-np.mean(signal)   # De-mean the signal
+
     meta_data = doc["meta_data"]
     fs = meta_data["sampling_frequency"]
 

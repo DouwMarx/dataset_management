@@ -183,6 +183,8 @@ class EncodingMovementMetrics(object):
         # # Compute AUC from the ROC
         # fpr, tpr, threash = roc_curve(labels, likelihoods, pos_label=0)
         # auc_score = auc(fpr, tpr)
+        if np.isnan(p):
+            print("p is nan")
 
         return measured_projection, p
 

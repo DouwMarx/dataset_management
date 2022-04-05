@@ -71,7 +71,7 @@ class IMSTest(object):
         if record_number < healthy_start_index:
             return -1  # Before healthy, discarded data
 
-        elif record_number <= healthy_end_index:
+        elif record_number < healthy_end_index:
             return 0  # Healthy data
 
         else:
