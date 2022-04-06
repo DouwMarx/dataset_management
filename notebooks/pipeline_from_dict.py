@@ -15,9 +15,9 @@ phme_report_path = Path("/home/douwm/projects/PhD/reports/conferences/PHME2022/m
 # experiment = "phenomenological_rapid0"
 # experiment = "phenomenological_perfect_augmentation"
 
-# experiment = "phenomenological"
+experiment = "phenomenological"
 
-experiment = "ims_t2_c1_outer"
+# experiment = "ims_t2_c1_outer"
 # experiment = "ims_t1_b3_inner"
 # experiment = "ims_t1_b4_ball"
 # experiment = "ims_t3_b3_outer"
@@ -97,4 +97,6 @@ if __name__ == "__main__":
     for experiment in ["ims_t2_c1_outer","ims_t1_b3_inner","ims_t1_b4_ball","ims_t3_b3_outer"]:
         experiment_specs = experiment_dict[experiment]
         db_to_act_on = experiment_specs["db_to_act_on"]
-        main(["metrics","plots"])
+        # main(["metrics","plots"])
+        # main(["models", "encodings", "metrics", "plots"])
+        main(["plots"])

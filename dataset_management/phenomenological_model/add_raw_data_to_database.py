@@ -108,8 +108,8 @@ def main(db_to_act_on):
         n_test = 50
         rapid = True
     else:
-        n_health = 250
-        n_test =  50
+        n_health = 500
+        n_test =  500
         rapid = False
 
     # fd = build_phenomenological_database(db_to_act_on,n_severities=sevs, rapid=rapid)

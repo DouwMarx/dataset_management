@@ -15,11 +15,11 @@ experiments = {
          "model_func": train_model,
          "encoding_func": enc_main,
          "metric_func": metric_main,
-         "training_parameters": dict(batch_size=8,
+         "training_parameters": dict(batch_size=16,
                                      bottle_neck_size=2,
-                                     num_epochs=4,
-                                     lambda_1_direction=10,
-                                     lambda_2_magnitude=0.1)
+                                     num_epochs=20,
+                                     lambda_1_direction=0.001,
+                                     lambda_2_magnitude=0.001)
          },
 
     # IMS test 1 bearing 4:  Roller fault
@@ -31,11 +31,11 @@ experiments = {
          "model_func": train_model,
          "encoding_func": enc_main,
          "metric_func": metric_main,
-         "training_parameters": dict(batch_size=8,
+         "training_parameters": dict(batch_size=16,
                                      bottle_neck_size=2,
-                                     num_epochs=4,
-                                     lambda_1_direction=10,
-                                     lambda_2_magnitude=0.1)
+                                     num_epochs=20,
+                                     lambda_1_direction=0.001,
+                                     lambda_2_magnitude=0.001)
          },
 
     # IMS test 2 channel 1: Outer faults
@@ -47,11 +47,11 @@ experiments = {
          "model_func": train_model,
          "encoding_func": enc_main,
          "metric_func": metric_main,
-         "training_parameters": dict(batch_size=8,
+         "training_parameters": dict(batch_size=16,
                                      bottle_neck_size=2,
-                                     num_epochs=4,
-                                     lambda_1_direction=10,
-                                     lambda_2_magnitude=0.1)
+                                     num_epochs=20,
+                                     lambda_1_direction=0.001,
+                                     lambda_2_magnitude=0.001)
          },
 
     # IMS test 3 bearing 3:  Outer fault
@@ -63,11 +63,11 @@ experiments = {
          "model_func": train_model,
          "encoding_func": enc_main,
          "metric_func": metric_main,
-         "training_parameters": dict(batch_size=8,
+         "training_parameters": dict(batch_size=16,
                                      bottle_neck_size=2,
-                                     num_epochs=4,
-                                     lambda_1_direction=10,
-                                     lambda_2_magnitude=0.1)
+                                     num_epochs=20,
+                                     lambda_1_direction=0.001,
+                                     lambda_2_magnitude=0.001)
          },
 
     # Phenomenological experiments
@@ -79,11 +79,11 @@ experiments = {
          "model_func": train_model,
          "encoding_func": enc_main,
          "metric_func": metric_main,
-         "training_parameters": dict(batch_size=8,
+         "training_parameters": dict(batch_size=16,
                                      bottle_neck_size=2,
-                                     num_epochs=4,
-                                     lambda_1_direction=10,
-                                     lambda_2_magnitude=0.1)
+                                     num_epochs=8,
+                                     lambda_1_direction=0.001,
+                                     lambda_2_magnitude=0.001)
          },
 
     "phenomenological":
@@ -94,10 +94,10 @@ experiments = {
          "model_func": train_model,
          "encoding_func": enc_main,
          "metric_func": metric_main,
-         "training_parameters": dict(batch_size=8,
+         "training_parameters": dict(batch_size=16,
                                      bottle_neck_size=2,
-                                     num_epochs=4,
-                                     lambda_1_direction=10,
-                                     lambda_2_magnitude=0.1)
+                                     num_epochs=8,
+                                     lambda_1_direction=0.01,
+                                     lambda_2_magnitude=0.01)
          },
 }

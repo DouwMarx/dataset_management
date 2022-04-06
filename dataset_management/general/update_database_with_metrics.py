@@ -23,6 +23,8 @@ class EncodingMovementMetrics(object):
         self.severe_augmented_data_examples_per_mode = {mode: self.get_severe_augmented_data_example(mode) for mode in
                                                         self.expected_failure_modes}
 
+
+
         # Get the medians of the healthy and damaged distributions so that the failure directions can be computed
         self.healthy_encoding_median = np.median(self.healthy_encoding, axis=0)
         self.severe_augmented_data_median_per_mode = {key: list(np.median(val, axis=0)) for key, val in
@@ -33,6 +35,14 @@ class EncodingMovementMetrics(object):
                                              self.actual_failure_modes}
         measured_severe_encoding_median = {key: np.median(val, axis=0) for key, val in
                                            measured_severe_encoding_per_mode.items()}
+
+        # Compute the distance between augmented clusters in order to get a way to get the right length for showing a fault direction
+        summation = 0
+        for mode,example_a in self.severe_augmented_data_median_per_mode.items():
+            for mode, example_b in self.severe_augmented_data_median_per_mode.items():
+                summation+=np.linalg.norm(np.array([example_a]) - np.array([example_b]))
+        distance_between_augmented_clusters = summation/3
+
 
         distance_healthy_to_severe_augmented_per_mode = {key: np.linalg.norm(
             np.array(self.healthy_encoding_median) - np.array(self.severe_augmented_data_median_per_mode[key])) for key
@@ -66,7 +76,8 @@ class EncodingMovementMetrics(object):
                                              "expected_failure_directions": self.expected_failure_directions_per_mode,
                                              "severe_augmented_median": self.severe_augmented_data_median_per_mode,
                                              "distance_healthy_to_severe": distance_healthy_to_severe_measured_per_mode,
-                                             "distance_healthy_to_augmented":distance_healthy_to_severe_augmented_per_mode
+                                             "distance_healthy_to_augmented":distance_healthy_to_severe_augmented_per_mode,
+                                             "distance_between_augmented_clusters":distance_between_augmented_clusters
                                          },
                                          upsert=True)
 
