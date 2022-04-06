@@ -98,5 +98,5 @@ if __name__ == "__main__":
         experiment_specs = experiment_dict[experiment]
         db_to_act_on = experiment_specs["db_to_act_on"]
         # main(["metrics","plots"])
-        # main(["models", "encodings", "metrics", "plots"])
-        main(["plots"])
+        main(["models", "encodings", "metrics", "plots"])
+        # main(["plots"])

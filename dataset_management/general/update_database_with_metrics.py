@@ -107,6 +107,7 @@ class EncodingMovementMetrics(object):
                 "severity": 999,  # self.max_severity,
                 "mode": expected_mode,
                 "model_used": self.model_used,
+                "set":"test"
             }
         )]
 
