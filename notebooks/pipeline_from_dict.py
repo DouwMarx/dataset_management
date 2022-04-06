@@ -15,9 +15,9 @@ phme_report_path = Path("/home/douwm/projects/PhD/reports/conferences/PHME2022/m
 # experiment = "phenomenological_rapid0"
 # experiment = "phenomenological_perfect_augmentation"
 
-experiment = "phenomenological"
+# experiment = "phenomenological"
 
-# experiment = "ims_t2_c1_outer"
+experiment = "ims_t2_c1_outer"
 # experiment = "ims_t1_b3_inner"
 # experiment = "ims_t1_b4_ball"
 # experiment = "ims_t3_b3_outer"
@@ -84,10 +84,17 @@ def main(to_run):
 if __name__ == "__main__":
     # if sys.argv[1] == 0:
     # main(["raw"])
-    # main(["process","augment"])
     # main(["augment"])
-    main(["models", "encodings", "metrics", "plots"])
+    # main(["process","augment"])
+    # main(["models", "encodings", "metrics", "plots"])
 
     # main(["models","encodings","metrics"])
     # main(["metrics","plots"])
     # main(["plots"])
+
+
+    # Running for all IMS datasets
+    for experiment in ["ims_t2_c1_outer","ims_t1_b3_inner","ims_t1_b4_ball","ims_t3_b3_outer"]:
+        experiment_specs = experiment_dict[experiment]
+        db_to_act_on = experiment_specs["db_to_act_on"]
+        main(["metrics","plots"])

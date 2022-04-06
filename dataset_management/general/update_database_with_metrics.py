@@ -209,6 +209,7 @@ class EncodingMovementMetrics(object):
                 "measured_projection_in_fault_direction": measured_projection,
                 # "healthy_projection_in_fault_direction": list(healthy_projection),
                 "p": p,
+                # "neg_log_p": -np.log(p+2e-23),
                 "neg_log_p": -np.log(p),
                 # "auc": auc_score
             }
