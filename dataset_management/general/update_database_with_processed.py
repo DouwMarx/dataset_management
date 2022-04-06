@@ -22,8 +22,8 @@ def limit_frequency_components(arr, fraction_of_spectrum_to_use=0.1):
     """
     siglen = len(arr)
     use = int(siglen * fraction_of_spectrum_to_use)
-    # return arr[:, 1:use]
-    return arr[1:use]
+    # return arr[1:use]
+    return arr[0:use]
 
 
 def compute_features_from_time_series_doc(doc):

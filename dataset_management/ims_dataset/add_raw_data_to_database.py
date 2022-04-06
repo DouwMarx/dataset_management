@@ -68,10 +68,10 @@ class IMSTest(object):
 
         healthy_start_index = self.channel_info[channel]["healthy_records"][0]
         healthy_end_index = self.channel_info[channel]["healthy_records"][1]
-        if record_number < healthy_start_index:
+        if record_number <= healthy_start_index:
             return -1  # Before healthy, discarded data
 
-        elif record_number < healthy_end_index:
+        elif record_number <= healthy_end_index:
             return 0  # Healthy data
 
         else:

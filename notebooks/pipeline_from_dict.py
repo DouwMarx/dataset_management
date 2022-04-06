@@ -85,8 +85,9 @@ if __name__ == "__main__":
     # if sys.argv[1] == 0:
     # main(["raw"])
     # main(["process","augment"])
-    # main(["models", "encodings", "metrics", "plots"])
+    # main(["augment"])
+    main(["models", "encodings", "metrics", "plots"])
 
     # main(["models","encodings","metrics"])
     # main(["metrics","plots"])
-    main(["plots"])
+    # main(["plots"])

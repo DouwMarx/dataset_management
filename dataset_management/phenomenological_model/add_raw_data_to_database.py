@@ -108,7 +108,7 @@ def main(db_to_act_on):
         n_test = 50
         rapid = True
     else:
-        n_health = 500
+        n_health = 250
         n_test =  50
         rapid = False
 
