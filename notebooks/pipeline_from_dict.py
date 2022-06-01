@@ -86,7 +86,7 @@ if __name__ == "__main__":
     # main(["raw"])
     # main(["augment"])
     # main(["process","augment"])
-    # main(["models", "encodings", "metrics", "plots"])
+    main(["models", "encodings", "metrics", "plots"])
 
     # main(["models","encodings","metrics"])
     # main(["metrics","plots"])
@@ -94,9 +94,9 @@ if __name__ == "__main__":
 
 
     # Running for all IMS datasets
-    for experiment in ["ims_t2_c1_outer","ims_t1_b3_inner","ims_t1_b4_ball","ims_t3_b3_outer"]:
-        experiment_specs = experiment_dict[experiment]
-        db_to_act_on = experiment_specs["db_to_act_on"]
-        # main(["metrics","plots"])
-        main(["models", "encodings", "metrics", "plots"])
-        # main(["plots"])
+    # for experiment in ["ims_t2_c1_outer","ims_t1_b3_inner","ims_t1_b4_ball","ims_t3_b3_outer"]:
+    #     experiment_specs = experiment_dict[experiment]
+    #     db_to_act_on = experiment_specs["db_to_act_on"]
+    #     # main(["metrics","plots"])
+    #     main(["models", "encodings", "metrics", "plots"])
+    #     # main(["plots"])

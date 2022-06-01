@@ -8,3 +8,4 @@ models_dir = root_dir.joinpath('models') # Data dir
 
 
 ims_path = Path("/home/douwm/data/IMS")
+lms_path = Path("/home/douwm/data/LMS")

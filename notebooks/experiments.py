@@ -19,7 +19,7 @@ experiments = {
                                      bottle_neck_size=2,
                                      num_epochs=20,
                                      lambda_1_direction=0.1,
-                                     lambda_2_magnitude=0.01)
+                                     lambda_2_magnitude=0.1)
          },
 
     # IMS test 1 bearing 4:  Roller fault
@@ -35,7 +35,7 @@ experiments = {
                                      bottle_neck_size=2,
                                      num_epochs=20,
                                      lambda_1_direction=0.1,
-                                     lambda_2_magnitude=0.01)
+                                     lambda_2_magnitude=0.1)
          },
 
     # IMS test 2 channel 1: Outer faults
@@ -51,7 +51,7 @@ experiments = {
                                      bottle_neck_size=2,
                                      num_epochs=20,
                                      lambda_1_direction=0.1,
-                                     lambda_2_magnitude=0.01)
+                                     lambda_2_magnitude=0.1)
          },
 
     # IMS test 3 bearing 3:  Outer fault
@@ -67,7 +67,7 @@ experiments = {
                                      bottle_neck_size=2,
                                      num_epochs=20,
                                      lambda_1_direction=0.1,
-                                     lambda_2_magnitude=0.01)
+                                     lambda_2_magnitude=0.1)
          },
 
     # Phenomenological experiments
