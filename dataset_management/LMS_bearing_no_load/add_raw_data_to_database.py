@@ -63,13 +63,13 @@ class LMS(object):
                          "severity": 2},
             "LOR3.mat": {"mode": "outer",
                          "oc": 3,
-                         "severity": 3},
+                         "severity": 2},
             "LOR2.mat": {"mode": "outer",
                          "oc": 2,
-                         "severity": 3},
+                         "severity": 2},
             "LOR1.mat": {"mode": "outer",
                          "oc": 1,
-                         "severity": 3},
+                         "severity": 2},
             "HEA2.mat": {"mode": "health",
                          "oc": 2,
                          "severity": 0},
@@ -86,7 +86,7 @@ class LMS(object):
         signal_length = len(signal)
 
         fs = 51200  # Sampling rate derived from increment parameter in the "x_values" field
-        rotation_speed = 5  # rev/s
+        rotation_speed = 20  # rev/s
         # time for 10 revolutions
         t_10revs = 10 / rotation_speed
         # number of samples for 10 revolutions
@@ -101,25 +101,27 @@ class LMS(object):
         self.db.drop_collection("raw")
 
 
-    def create_document(self, time_series_data, fault_class, severity):
+    def create_document(self, time_series_data, fault_class, severity,operating_condition):
         doc = {"mode": fault_class,
                "severity": severity,
                "meta_data": self.lms_meta_data,
                "time_series": list(time_series_data),
+               "oc":operating_condition
                }
         return doc
 
-    def add_to_db(self,signal_segments,mode,severity):
-        docs = [self.create_document(signal,mode,severity) for signal in signal_segments]
+    def add_to_db(self,signal_segments,mode,severity,operating_condition):
+        docs = [self.create_document(signal,mode,severity,operating_condition) for signal in signal_segments]
 
         # TODO: Add the test functionality here to make it around the healhty damage treshold
         self.db["raw"].insert_many(docs)
 
     def add_all_to_db(self):
         for key,val in tqdm(self.datasets.items()):
-            signal = get_accelerometer_signal(lms_path.joinpath(key))
-            signal_segments = overlap(signal, self.cut_signal_length, int(self.cut_signal_length / 2))
-            self.add_to_db(signal_segments,val["mode"],val["severity"])
+            signal = get_accelerometer_signal(lms_path.joinpath(key))[-51200*10:] # Use the last 10 seconds of data for each trial
+            print(signal.shape)
+            signal_segments = overlap(signal, self.cut_signal_length, int(self.cut_signal_length / 8))
+            self.add_to_db(signal_segments,val["mode"],val["severity"],val["oc"])
 
 o = LMS()
 o.add_all_to_db()
