@@ -10,4 +10,6 @@ from database_definitions import make_db
 # db_phenomenological_rapid,client_phenomenological_rapid = make_db("phenomenological_rapid0")
 # db_phenomenological,client_phenomenological = make_db("phenomenological")
 
-db_classification,client_classification = make_db("pheno_classification")
+# db_classification,client_classification = make_db("pheno_classification")
+
+db_cwr,client_cwr= make_db("cwr")

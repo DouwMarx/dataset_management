@@ -89,10 +89,12 @@ def build_phenomenological_database_linear_sev(db_to_act_on, n_health = 10, n_te
 
     return db["raw"]# The mongodb collection
 
-def build_phenomenological_database_classification(db_to_act_on, n_per_class, rapid=True):
+def build_phenomenological_database_classification(db_to_act_on, n_per_class, rapid=True,remove_existing=True):
     # Mongo database
     db,client = make_db(db_to_act_on)
-    db["raw"].delete_many({}) #  Remove the items in the collection
+
+    if remove_existing:
+        db["raw"].delete_many({}) #  Remove the items in the collection
 
     o = ClassificationDataset(samples_per_class=n_per_class,failure_modes=["ball", "inner", "outer"],quick_iter=rapid,parallel_evaluate=True)
 
@@ -114,8 +116,8 @@ def build_phenomenological_database_classification(db_to_act_on, n_per_class, ra
                                                                           fault_type in ["ball", "outer", "inner"]}}
         meta_data.update(expected_fault_frequencies_dict)
 
-        meta_data.update({"mode": meta_data['simulation_governing_parameters']["fault_type"]})
         doc.update({"meta_data":meta_data})
+        doc.update({"mode": meta_data['simulation_governing_parameters']["fault_type"]})
 
 
         result_docs[i] = doc
@@ -141,7 +143,10 @@ def main(db_to_act_on):
     # fd = build_phenomenological_database(db_to_act_on,n_severities=sevs, rapid=rapid)
     # fd = build_phenomenological_database_linear_sev(db_to_act_on,n_health=n_health,n_test=n_test,rapid=rapid)
 
-    fd = build_phenomenological_database_classification(db_to_act_on,n_per_class=100,rapid=False)
+    n_per_class = 10
+    fd = build_phenomenological_database_classification(db_to_act_on,n_per_class=n_per_class,rapid=False)
+    for i in tqdm(range(9)):
+        build_phenomenological_database_classification(db_to_act_on,n_per_class=n_per_class,rapid=False,remove_existing=False)
 
     return fd.count_documents({})
 
