@@ -67,18 +67,23 @@ class CWR(object):
                         },
         }
 
-        highest_expected_fault_frequency = self.files_and_measurement_ids["210.mat"]["expected_fault_frequency"]
-        n_events = 10
+        # For Ball failure mode having the lowest expected fault frequency
+        lowest_expected_fault_frequency = self.files_and_measurement_ids["223.mat"]["expected_fault_frequency"]
+        n_events = 15
         # time required for n_events for highest fault frequency
-        duration_for_n_events = n_events/ highest_expected_fault_frequency
-        print("Duration for n_events: ", duration_for_n_events)
+        duration_for_n_events = n_events / lowest_expected_fault_frequency
+        print("Duration for {} events: ".format(n_events), duration_for_n_events)
         # number of samples for 10 revolutions
         n_samples_n_events = duration_for_n_events *sampling_frequency
-        print("Number of samples for n_events: ", n_samples_n_events)
-        self.cut_signal_length = int(n_samples_n_events)
+        self.cut_signal_length = int(np.floor(n_samples_n_events/2)*2) # Ensure that the signals have an even length# Ensure that the signals have an even length# Ensure that the signals have an even length
         print("Cutting signals in length: ", self.cut_signal_length)
 
         self.cwr_meta_data = {"sampling_frequency":sampling_frequency}
+        self.cwr_meta_data["expected_fault_frequencies"] = {test["mode"]: test["expected_fault_frequency"] for test_name,test in self.files_and_measurement_ids.items() if test["mode"] is not None}
+
+        self.cwr_meta_data["expected_fault_frequencies"]["fr"] = rotation_rate # Also add the rotation rate and the FTF (Fundamental train frequency)
+        self.cwr_meta_data["expected_fault_frequencies"]["ftf"] = 0.3983*rotation_rate
+
         self.db,self.client = make_db("cwr")
         self.db.drop_collection("raw")
 
@@ -106,12 +111,16 @@ class CWR(object):
             if file_name == "098.mat":
                 signal = signal[::4].copy()  # Down sample the healthy data since it is sampled at a different sampling rate than the damaged data. 12kHz vs 48kHz
 
-            signal_segments = overlap(signal, self.cut_signal_length, int(self.cut_signal_length / 2)) # Segments have half overlap
+            percentage_overlap = 0.50
+            signal_segments = overlap(signal, self.cut_signal_length, np.floor(self.cut_signal_length * percentage_overlap)) # Segments have half overlap
+
+            print("Number of signal segments extracted: ", signal_segments.shape[0])
 
             self.add_to_db(signal_segments, info["mode"], info["severity"])
 
 o = CWR()
 o.add_all_to_db()
+print("Signal length:" , o.cut_signal_length)
 
 
 

@@ -3,19 +3,20 @@ from pathlib import Path
 
 from experiments import experiments as experiment_dict
 from time import time, sleep
-from informed_anomaly_detection.visualisation.visualisation_pipeline import make_plots
+from informed_anomaly_detection.visualisation.visualisation_pipeline import make_plots, \
+    make_plots_with_training_progress
 
 # meeting_path = Path("/home/douwm/projects/PhD/reports/meetings/20220321_informed_anomaly_detection_on_ims/20220321_beamer/images")
-# plots_path = Path("/home/douwm/projects/PhD/code/informed_anomaly_detection/reports/plots")
+plots_path = Path("/home/douwm/projects/PhD/code/informed_anomaly_detection/reports/plots")
 # phme_report_path = Path("/home/douwm/projects/PhD/reports/conferences/PHME2022/paper_tex/src/images/plots")
-phme_report_path = Path("/home/douwm/projects/PhD/reports/conferences/PHME2022/marx_gryllias_domain_knowlege_informed_unsupervised/src/Figures/plots")
+# phme_report_path = Path("/home/douwm/projects/PhD/reports/conferences/PHME2022/marx_gryllias_domain_knowlege_informed_unsupervised/src/Figures/plots")
 
 # experiment = "ims_rapid1_t2_c1_outer"
 # experiment = "ims_rapid0_t2_c1_outer"
 # experiment = "phenomenological_rapid0"
 # experiment = "phenomenological_perfect_augmentation"
 
-experiment = "phenomenological"
+experiment = "phenomenological_show_intermediate"
 
 # experiment = "ims_t2_c1_outer"
 # experiment = "ims_t1_b3_inner"
@@ -63,9 +64,8 @@ def run_metrics():
 
 
 def run_plots():
-    make_plots(db_to_act_on, "latent_directions_maximally_different_" + experiment, phme_report_path, export_pdf=True,
-               experiment_name=experiment)
-
+    # make_plots(db_to_act_on, "latent_directions_maximally_different_" + experiment, plots_path, export_pdf=True,experiment_name=experiment)
+    make_plots_with_training_progress(db_to_act_on, plots_path, export_pdf=True,experiment_name=experiment)
 
 def main(to_run):
     run_dict = {"raw": run_raw,
@@ -86,8 +86,11 @@ if __name__ == "__main__":
     # main(["raw"])
     # main(["augment"])
     # main(["process","augment"])
-    main(["models", "encodings", "metrics", "plots"])
-
+    # main(["models"])
+    main(["models", "encodings", "metrics","plots"])
+    # main(["plots"])
+    # main(["models", "encodings", "metrics", "plots"])
+    # main(["models", "encodings"])
     # main(["models","encodings","metrics"])
     # main(["metrics","plots"])
     # main(["plots"])
