@@ -16,7 +16,8 @@ plots_path = Path("/home/douwm/projects/PhD/code/informed_anomaly_detection/repo
 # experiment = "phenomenological_rapid0"
 # experiment = "phenomenological_perfect_augmentation"
 
-experiment = "phenomenological_show_intermediate"
+# experiment = "phenomenological_show_intermediate"
+experiment = "ims_show_intermediate"
 
 # experiment = "ims_t2_c1_outer"
 # experiment = "ims_t1_b3_inner"

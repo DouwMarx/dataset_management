@@ -115,4 +115,18 @@ experiments = {
                                      lambda_1_direction=0.01,
                                      lambda_2_magnitude=0.01)
          },
+    "ims_show_intermediate":
+        {"db_to_act_on": "ims_test2_bearing1_channel1",
+         "raw_func": ims_raw,
+         "process_func": process_no_bandpass,
+         "augment_func": aug_main,
+         "model_func": train_model_and_keep_the_intermediate_states_of_training,
+         "encoding_func": enc_main,
+         "metric_func": metric_main,
+         "training_parameters": dict(batch_size=16,
+                                     bottle_neck_size=2,
+                                     num_epochs=10,
+                                     lambda_1_direction=0.01,
+                                     lambda_2_magnitude=0.01)
+         },
 }

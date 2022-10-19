@@ -41,7 +41,7 @@ def get_accelerometer_signal(path_to_mat_file):
 
 class CWR(object):
     """
-    Used to add the IMS data to mongodb
+    Used to add the CWR data to mongodb
     """
 
     def __init__(self):
