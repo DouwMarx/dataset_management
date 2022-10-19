@@ -9,4 +9,4 @@ models_dir = root_dir.joinpath('models') # Data dir
 
 ims_path = Path("/home/douwm/data/IMS")
 lms_path = Path("/home/douwm/data/LMS")
-cwr_path = Path("/home/douwm/data/CWR/0.021_dirve_end_load_1")
+cwr_path = Path("/home/douwm/data/CWR/drive_end_12k")

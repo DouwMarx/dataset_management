@@ -1,12 +1,7 @@
-import random
-from datetime import datetime
 import numpy as np
 import pandas as pd
+
 from database_definitions import make_db
-from file_definitions import ims_path
-from pypm.phenomenological_bearing_model.bearing_model import Bearing
-from tqdm import tqdm
-from dataset_management.ultils.mongo_test_train_split import test_train_split
 from scipy.io import loadmat
 from file_definitions import cwr_path
 
@@ -38,6 +33,11 @@ def get_accelerometer_signal(path_to_mat_file):
     accelerometer_1 = accelerometer_signals[:, 0]  # Numbering is not necessarily correct
     return accelerometer_1
 
+def get_metadata_from_csv():
+    meta_data_SmithRandal2014 = pd.read_csv("meta_data_tablea2_Smith-Randal-2014.csv",keep_default_na=False)
+    meta_data_SmithRandal2014.replace(np.nan,"0",inplace=True)
+    return meta_data_SmithRandal2014
+
 
 class CWR(object):
     """
@@ -45,70 +45,102 @@ class CWR(object):
     """
 
     def __init__(self):
-        sampling_frequency = 12000  # Hz
         rotation_rate = 1772 / 60  # Rev/s
-
-        self.files_and_measurement_ids = {
-            "210.mat": {"mode": "inner",
-                        "expected_fault_frequency": 5.415 * rotation_rate,
-                        "severity":1
-                        },
-            "223.mat": {"mode": "ball",
-                        "expected_fault_frequency": 2.357 * rotation_rate,
-                        "severity":1
-                        },
-            "235.mat": {"mode": "outer",
-                        "expected_fault_frequency": 3.585 * rotation_rate,
-                        "severity":1
-                        },
-            "098.mat": {"mode": None,
-                        "expected_fault_frequency": None,
-                        "severity":1
-                        },
-        }
+        self.sampling_frequency= 12000
 
         # For Ball failure mode having the lowest expected fault frequency
-        lowest_expected_fault_frequency = self.files_and_measurement_ids["223.mat"]["expected_fault_frequency"]
+        lowest_expected_fault_frequency = 2.357 * rotation_rate
         n_events = 15
         # time required for n_events for highest fault frequency
         duration_for_n_events = n_events / lowest_expected_fault_frequency
         print("Duration for {} events: ".format(n_events), duration_for_n_events)
         # number of samples for 10 revolutions
-        n_samples_n_events = duration_for_n_events *sampling_frequency
+        n_samples_n_events = duration_for_n_events *self.sampling_frequency
         self.cut_signal_length = int(np.floor(n_samples_n_events/2)*2) # Ensure that the signals have an even length# Ensure that the signals have an even length# Ensure that the signals have an even length
         print("Cutting signals in length: ", self.cut_signal_length)
 
-        self.cwr_meta_data = {"sampling_frequency":sampling_frequency}
-        self.cwr_meta_data["expected_fault_frequencies"] = {test["mode"]: test["expected_fault_frequency"] for test_name,test in self.files_and_measurement_ids.items() if test["mode"] is not None}
 
-        self.cwr_meta_data["expected_fault_frequencies"]["fr"] = rotation_rate # Also add the rotation rate and the FTF (Fundamental train frequency)
-        self.cwr_meta_data["expected_fault_frequencies"]["ftf"] = 0.3983*rotation_rate
 
-        self.db,self.client = make_db("cwr")
-        self.db.drop_collection("raw")
+        self.smith_randal_meta_data = get_metadata_from_csv()
+
+        # Create a db for each of the operating conditions
+        self.dbs = {}
+        for oc in range(4): # There are a total of 4 operating conditions
+            db,client = make_db("cwr_oc" + str(oc))
+            db.drop_collection("raw") # Drop the collection if it already exists
+            self.dbs[oc] = db
+
+    def get_expected_fault_frequency_for_mode(self,mode, rpm):
+        rotation_rate = rpm / 60  # Rev/s
+
+        # Fault frequencies from Smith and Randal 2014
+        if "inner" in mode:
+            return 5.415 * rotation_rate
+        elif "ball" in mode:
+            return 2.357 * rotation_rate
+        elif "outer" in mode:
+            return 3.585 * rotation_rate
+        else:
+            return None
 
     def create_document(self, time_series_data, fault_class, severity):
         doc = {"mode": fault_class,
                "severity": severity,
-               "meta_data": self.cwr_meta_data,
                "time_series": list(time_series_data),
                }
         return doc
 
-    def add_to_db(self,signal_segments,mode,severity):
+    def add_to_db(self,operating_condition, signal_segments,mode,severity):
+
         docs = [self.create_document(signal,mode,severity) for signal in signal_segments]
 
-        # TODO: Add the test functionality here to make it around the healhty damage treshold
-        self.db["raw"].insert_many(docs)
+        # TODO: Add the test functionality here to make it around the healthy damage threshold
+        self.dbs[operating_condition]["raw"].insert_many(docs) # Insert the documents into the db with the right operating condition
+
+
+    def get_meta_data(self,stem):
+        file_name_number = int(stem)
+
+        r = self.smith_randal_meta_data
+
+        # Find the row and column position in the dataframe where the number occurs
+        row, column = np.where(r == file_name_number)
+        fault_width = r.iloc[row, 0].values[0]
+        hp = r.iloc[row, 1].values[0]
+        rpm = r.iloc[row, 2].values[0]
+        mode = str(r.columns[column])
+
+        print(stem)
+        print("Fault width: ", fault_width)
+        print("HP: ", hp)
+        print("RPM: ", rpm)
+        print("Mode: ", mode)
+        print("")
+
+        expected_fault_frequency = self.get_expected_fault_frequency_for_mode(mode, rpm)
+
+        meta_data = {   "severity":fault_width,
+                        "oc":hp, # Operating condition
+                        "rpm":rpm,
+                        "expected_fault_frequency":expected_fault_frequency,
+                        "mode":mode,
+                        "dataset_number":file_name_number,
+                        "sampling_frequency": self.sampling_frequency# Hz
+        }
+        return meta_data
+
 
     def add_all_to_db(self):
+        # loop trough all files in the pathlib path directory
+        for file_name in cwr_path.glob("*.mat"):
+            meta_data = self.get_meta_data(file_name.stem)
+            print(meta_data)
+            path_to_mat_file = cwr_path.joinpath(file_name.name)
+            mat = loadmat(str(path_to_mat_file)) # Load the .mat file
+            key = [key for key in mat.keys() if "DE" in key][0]# Here we select the drive-end measurements
+            signal = mat[key].flatten() # Here we select the drive-end measurements
 
-        for file_name, info in self.files_and_measurement_ids.items():
-            path_to_mat_file = cwr_path.joinpath(file_name)
-            mat = loadmat(str(path_to_mat_file))
-            signal = mat["X" + file_name[0:-4] + "_DE_time"].flatten()
-
-            if file_name == "098.mat":
+            if file_name == "098.mat": # Exception for the healthy data
                 signal = signal[::4].copy()  # Down sample the healthy data since it is sampled at a different sampling rate than the damaged data. 12kHz vs 48kHz
 
             percentage_overlap = 0.50
@@ -116,11 +148,12 @@ class CWR(object):
 
             print("Number of signal segments extracted: ", signal_segments.shape[0])
 
-            self.add_to_db(signal_segments, info["mode"], info["severity"])
+            self.add_to_db(meta_data["oc"],signal_segments, meta_data["mode"], meta_data["severity"])
 
 o = CWR()
 o.add_all_to_db()
 print("Signal length:" , o.cut_signal_length)
+
 
 
 
