@@ -59,8 +59,6 @@ class CWR(object):
         self.cut_signal_length = int(np.floor(n_samples_n_events/2)*2) # Ensure that the signals have an even length# Ensure that the signals have an even length# Ensure that the signals have an even length
         print("Cutting signals in length: ", self.cut_signal_length)
 
-
-
         self.smith_randal_meta_data = get_metadata_from_csv()
 
         # Create a db for each of the operating conditions
@@ -83,16 +81,17 @@ class CWR(object):
         else:
             return None
 
-    def create_document(self, time_series_data, fault_class, severity):
-        doc = {"mode": fault_class,
-               "severity": severity,
-               "time_series": list(time_series_data),
-               }
+    def create_document(self, time_series_data, metadata):
+    # def create_document(self, time_series_data, meta_data):
+        doc = metadata.copy()
+        doc["signal_data"] = list(time_series_data)
         return doc
 
-    def add_to_db(self,operating_condition, signal_segments,mode,severity):
+    def add_to_db(self,signal_segments, meta_data):
 
-        docs = [self.create_document(signal,mode,severity) for signal in signal_segments]
+        operating_condition = meta_data["oc"]
+
+        docs = [self.create_document(signal,meta_data) for signal in signal_segments]
 
         # TODO: Add the test functionality here to make it around the healthy damage threshold
         self.dbs[operating_condition]["raw"].insert_many(docs) # Insert the documents into the db with the right operating condition
@@ -109,20 +108,14 @@ class CWR(object):
         hp = r.iloc[row, 1].values[0]
         rpm = r.iloc[row, 2].values[0]
         mode = str(r.columns[column])
-
-        print(stem)
-        print("Fault width: ", fault_width)
-        print("HP: ", hp)
-        print("RPM: ", rpm)
-        print("Mode: ", mode)
-        print("")
-
         expected_fault_frequency = self.get_expected_fault_frequency_for_mode(mode, rpm)
 
+        print("rpm = ", rpm, " fault_width = ", fault_width, " expected_fault_frequency", expected_fault_frequency)
+
         meta_data = {   "severity":fault_width,
-                        "oc":hp, # Operating condition
-                        "rpm":rpm,
-                        "expected_fault_frequency":expected_fault_frequency,
+                        "oc":int(hp), # Operating condition
+                        "rpm":int(rpm),
+                        "expected_fault_frequency":float(expected_fault_frequency) if expected_fault_frequency != None else None,
                         "mode":mode,
                         "dataset_number":file_name_number,
                         "sampling_frequency": self.sampling_frequency# Hz
@@ -134,21 +127,21 @@ class CWR(object):
         # loop trough all files in the pathlib path directory
         for file_name in cwr_path.glob("*.mat"):
             meta_data = self.get_meta_data(file_name.stem)
-            print(meta_data)
             path_to_mat_file = cwr_path.joinpath(file_name.name)
             mat = loadmat(str(path_to_mat_file)) # Load the .mat file
             key = [key for key in mat.keys() if "DE" in key][0]# Here we select the drive-end measurements
             signal = mat[key].flatten() # Here we select the drive-end measurements
 
-            if file_name == "098.mat": # Exception for the healthy data
+            if meta_data["severity"] == 0: # The healthy data is sampled at a higher rate
                 signal = signal[::4].copy()  # Down sample the healthy data since it is sampled at a different sampling rate than the damaged data. 12kHz vs 48kHz
+                print("Down sampling healthy data, dataset ", meta_data["dataset_number"])
 
             percentage_overlap = 0.50
             signal_segments = overlap(signal, self.cut_signal_length, np.floor(self.cut_signal_length * percentage_overlap)) # Segments have half overlap
 
             print("Number of signal segments extracted: ", signal_segments.shape[0])
 
-            self.add_to_db(meta_data["oc"],signal_segments, meta_data["mode"], meta_data["severity"])
+            self.add_to_db(signal_segments, meta_data)
 
 o = CWR()
 o.add_all_to_db()

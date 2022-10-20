@@ -114,8 +114,6 @@ class DerivedDoc():
             chunk.append(row)
         yield chunk
 
-
-
 def new_docs_from_computed(doc, list_of_computed_dicts):
     # Transfer some of information from the source document
 
