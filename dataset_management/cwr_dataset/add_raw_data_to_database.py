@@ -84,7 +84,7 @@ class CWR(object):
     def create_document(self, time_series_data, metadata):
     # def create_document(self, time_series_data, meta_data):
         doc = metadata.copy()
-        doc["signal_data"] = list(time_series_data)
+        doc["time_series"] = list(time_series_data)
         return doc
 
     def add_to_db(self,signal_segments, meta_data):
@@ -107,7 +107,7 @@ class CWR(object):
         fault_width = r.iloc[row, 0].values[0]
         hp = r.iloc[row, 1].values[0]
         rpm = r.iloc[row, 2].values[0]
-        mode = str(r.columns[column])
+        mode = str(r.columns[column].values[0])
         expected_fault_frequency = self.get_expected_fault_frequency_for_mode(mode, rpm)
 
         print("rpm = ", rpm, " fault_width = ", fault_width, " expected_fault_frequency", expected_fault_frequency)
