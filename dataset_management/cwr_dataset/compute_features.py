@@ -1,11 +1,12 @@
 import matplotlib.pyplot as plt
 import numpy as np
-
+from pymongo import MongoClient
+from joblib import Parallel, delayed
 from scipy.stats import entropy
+from tqdm import tqdm
+
 from database_definitions import make_db
 
-oc = "oc2"
-db, client = make_db("cwr_" + oc)
 
 # Most of the features from here
 # https://ieeexplore.ieee.org/stamp/stamp.jsp?tp=&arnumber=6823731
@@ -68,22 +69,31 @@ feature_dict = {"rms": get_rms,
                 }
 
 
-collection = db["raw"]
 
 
-# for example in list(collection.find({"severity":0.53}))[:10]:
-#     scores = get_frequency_features(example["time_series"], example["rpm"], example["sampling_frequency"])
-#     mode = example["mode"]
-#     print("True mode:", mode, "highest score:", max(scores, key=scores.get))
+def process(db_to_act_on):
+    print("Computing features for database: " + db_to_act_on)
+    client = MongoClient()
+    db = client[db_to_act_on]
+    collection = db["raw"]
+
+    # Loop though each entry in the collection
+    for doc in tqdm(collection.find()):
+        for key, function in feature_dict.items():
+            time_series = doc["time_series"]
+
+            if key == "frequency_features":
+                freq_features = function(time_series, rpm=doc["rpm"], fs=doc["sampling_frequency"])
+                for freq_key, freq_value in freq_features.items():
+                    collection.update_one({"_id": doc["_id"]}, {"$set": {freq_key: freq_value}})
+            else:
+                collection.update_one({"_id": doc["_id"]}, {"$set": {key: function(time_series)}})
+    client.close()
+
+# Add the data to the database in parallel
 
 
-# Loop though each entry in the collection
-for doc in collection.find():
-    for key, function in feature_dict.items():
-        if key == "frequency_features":
-            freq_features = function(doc["time_series"], rpm=doc["rpm"], fs=doc["sampling_frequency"])
-            for freq_key, freq_value in freq_features.items():
-                collection.update_one({"_id": doc["_id"]}, {"$set": {freq_key: freq_value}})
-        else:
-            collection.update_one({"_id": doc["_id"]}, {"$set": {key: function(doc["time_series"])}})
-    print(doc.keys())
+client = MongoClient()
+cwr_dbs = [name for name in client.list_database_names() if "cwr" in name]
+
+Parallel(n_jobs=6)(delayed(process)(oc) for oc in cwr_dbs)

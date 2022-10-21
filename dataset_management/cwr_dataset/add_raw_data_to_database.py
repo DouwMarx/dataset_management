@@ -110,8 +110,6 @@ class CWR(object):
         mode = str(r.columns[column].values[0])
         expected_fault_frequency = self.get_expected_fault_frequency_for_mode(mode, rpm)
 
-        print("rpm = ", rpm, " fault_width = ", fault_width, " expected_fault_frequency", expected_fault_frequency)
-
         meta_data = {   "severity":fault_width,
                         "oc":int(hp), # Operating condition
                         "rpm":int(rpm),
