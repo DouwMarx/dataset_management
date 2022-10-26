@@ -71,29 +71,27 @@ feature_dict = {"rms": get_rms,
 
 
 
-def process(db_to_act_on):
-    print("Computing features for database: " + db_to_act_on)
+def process(doc):
     client = MongoClient()
-    db = client[db_to_act_on]
+    db = client["cwr"]
     collection = db["raw"]
 
     # Loop though each entry in the collection
-    for doc in tqdm(collection.find()):
-        for key, function in feature_dict.items():
-            time_series = doc["time_series"]
+    for key, function in feature_dict.items():
+        time_series = doc["time_series"]
 
-            if key == "frequency_features":
-                freq_features = function(time_series, rpm=doc["rpm"], fs=doc["sampling_frequency"])
-                for freq_key, freq_value in freq_features.items():
-                    collection.update_one({"_id": doc["_id"]}, {"$set": {freq_key: freq_value}})
-            else:
-                collection.update_one({"_id": doc["_id"]}, {"$set": {key: function(time_series)}})
+        if key == "frequency_features":
+            freq_features = function(time_series, rpm=doc["rpm"], fs=doc["sampling_frequency"])
+            for freq_key, freq_value in freq_features.items():
+                collection.update_one({"_id": doc["_id"]}, {"$set": {freq_key: freq_value}})
+        else:
+            collection.update_one({"_id": doc["_id"]}, {"$set": {key: function(time_series)}})
     client.close()
 
 # Add the data to the database in parallel
 
 
 client = MongoClient()
-cwr_dbs = [name for name in client.list_database_names() if "cwr" in name]
+db = client["cwr"]
 
-Parallel(n_jobs=6)(delayed(process)(oc) for oc in cwr_dbs)
+Parallel(n_jobs=6)(delayed(process)(doc) for doc in tqdm(db["raw"].find()))
