@@ -26,5 +26,5 @@ for db in client.list_database_names():
         client.drop_database(db)
 
 # Add random noise to all of the data in the dataset
-for snr in [10,20,30]:
+for snr in [200,400,600]:
     Parallel(n_jobs=4)(delayed(process)(oc,snr) for oc in [0,1,2,3])

@@ -122,7 +122,7 @@ class CWR(object):
 
 
     def add_all_to_db(self):
-        # loop trough all files in the pathlib path directory
+        # loop through all files in the pathlib path directory
         for file_name in cwr_path.glob("*.mat"):
             meta_data = self.get_meta_data(file_name.stem)
             path_to_mat_file = cwr_path.joinpath(file_name.name)

@@ -19,7 +19,7 @@ def get_sra(sig):
     return np.mean(np.sqrt(np.abs(sig)))
 
 def get_kurtosis(sig):
-    return np.mean(np.power(sig, 4)) / np.power(np.mean(np.power(sig, 2)), 2)
+    return np.log(np.mean(np.power(sig, 4)) / np.power(np.mean(np.power(sig, 2)), 2))
 
 def get_crest_factor(sig):
     return np.max(np.abs(sig)) / get_rms(sig)
