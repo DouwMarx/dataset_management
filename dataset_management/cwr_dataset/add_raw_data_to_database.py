@@ -1,5 +1,6 @@
 import numpy as np
 import pandas as pd
+from pymongo import MongoClient
 
 from database_definitions import make_db
 from scipy.io import loadmat
@@ -61,12 +62,23 @@ class CWR(object):
 
         self.smith_randal_meta_data = get_metadata_from_csv()
 
+        # First drop all the datasets associated with the cwr dataset
+        # All the mongo dataset names
+        client = MongoClient()
+        db_names = client.list_database_names()
+
+        # Drop all the databases associated with the cwr dataset
+        for db_name in db_names:
+            if "cwr" in db_name:
+                client.drop_database(db_name)
+
         # Create a db for each of the operating conditions
-        self.dbs = {}
-        for oc in range(4): # There are a total of 4 operating conditions
-            db,client = make_db("cwr_oc" + str(oc))
-            db.drop_collection("raw") # Drop the collection if it already exists
-            self.dbs[oc] = db
+        # self.dbs = {}
+        # for oc in range(4): # There are a total of 4 operating conditions
+        #     db,client = make_db("cwr_oc" + str(oc))
+        #     db.drop_collection("raw") # Drop the collection if it already exists
+        #     self.dbs[oc] = db
+        self.db,self.client = make_db("cwr")
 
     def get_expected_fault_frequency_for_mode(self,mode, rpm):
         rotation_rate = rpm / 60  # Rev/s
@@ -88,13 +100,11 @@ class CWR(object):
         return doc
 
     def add_to_db(self,signal_segments, meta_data):
-
-        operating_condition = meta_data["oc"]
-
-        docs = [self.create_document(signal,meta_data) for signal in signal_segments]
+        docs = [self.create_document(signal, meta_data) for signal in signal_segments]
 
         # TODO: Add the test functionality here to make it around the healthy damage threshold
-        self.dbs[operating_condition]["raw"].insert_many(docs) # Insert the documents into the db with the right operating condition
+        # self.dbs[operating_condition]["raw"].insert_many(docs) # Insert the documents into the db with the right operating condition
+        self.db["raw"].insert_many(docs) # Insert the documents into the db with the right operating condition
 
 
     def get_meta_data(self,stem):
@@ -112,9 +122,10 @@ class CWR(object):
 
         meta_data = {   "severity":fault_width,
                         "oc":int(hp), # Operating condition
+                        "snr":0, # Signal-to-noise ratio is zero for the raw data
+                        "mode":mode,
                         "rpm":int(rpm),
                         "expected_fault_frequency":float(expected_fault_frequency) if expected_fault_frequency != None else None,
-                        "mode":mode,
                         "dataset_number":file_name_number,
                         "sampling_frequency": self.sampling_frequency# Hz
         }
@@ -141,8 +152,10 @@ class CWR(object):
 
             self.add_to_db(signal_segments, meta_data)
 
+        return self.db
+
 o = CWR()
-o.add_all_to_db()
+db = o.add_all_to_db()
 print("Signal length:" , o.cut_signal_length)
 
 
