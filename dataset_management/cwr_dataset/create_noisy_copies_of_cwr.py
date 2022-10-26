@@ -6,25 +6,38 @@ from tqdm import tqdm
 from database_definitions import make_db
 from dataset_management.ultils.update_database import DerivedDoc
 
+# See below for snr definition
+# https://stackoverflow.com/questions/14058340/adding-noise-to-a-signal-in-python
 
-def process(oc,snr):
-    db_og,client_og = make_db("cwr_oc" + str(oc))
-    db_new,client_new = make_db("cwr_oc" + str(oc) + "_snr" + str(snr))
-    db_new["raw"].drop()
 
-    for doc in tqdm(db_og["raw"].find()):
-        doc["time_series"] = list(doc["time_series"] + snr/100*np.random.normal(0,1,len(doc["time_series"])))
-        db_new["raw"].insert_one(doc)
+def process(doc, snr_levels=None):
+    if snr_levels is None:
+        snr_levels = [1, 2, 3]
+    db,client = make_db("cwr")
+    docs = []
+    for snr in snr_levels:
+        # Create a copy of the document
+        new_doc = doc.copy()
+        new_doc.pop("_id")
+        # Remove the id field
+        new_doc.update({"snr": snr})
+        doc["time_series"] = list(doc["time_series"] + snr*np.random.normal(0,1,len(doc["time_series"])))
+        docs.append(new_doc)
 
-    client_og.close()
-    client_new.close()
+    db["raw"].insert_many(docs)
+    client.close()
 
-# Drop all the mongo databases that contrain "snr"
-client = MongoClient()
-for db in client.list_database_names():
-    if "snr" in db:
-        client.drop_database(db)
+db,client = make_db("cwr")
 
-# Add random noise to all of the data in the dataset
-for snr in [200,400,600]:
-    Parallel(n_jobs=4)(delayed(process)(oc,snr) for oc in [0,1,2,3])
+# First remove all entries in the database that has snr > 0
+db["raw"].delete_many({"snr": {"$gt": 0}})
+
+print("now")
+
+Parallel(n_jobs=6)(delayed(process)(doc) for doc in tqdm(db["raw"].find({"snr":0})))
+
+# for doc in tqdm(db["raw"].find({"snr":0})):
+#     process(doc)
+
+    # # Use only the data with snr level 0 as the source
+    # for doc in tqdm(db_og["raw"].find({"snr":0})):
