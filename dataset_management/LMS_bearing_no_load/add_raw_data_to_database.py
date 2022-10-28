@@ -124,13 +124,18 @@ class LMS(object):
             self.add_to_db(signal_segments,val["mode"],val["severity"],val["oc"])
 
 o = LMS()
-o.add_all_to_db()
+# o.add_all_to_db()
 
 # Accelerometer data is "Signal_3", There are two channels for signal 3, one for each of the accelerometers
 
 # This is used to explore the data channels
+
+# example = o.datasets.items().__iter__().__next__()
+# signal = get_accelerometer_signal(lms_path.joinpath(example[0]))
+#     print(signal.shape)
+#     signal_segments = overlap(signal, self.cut_signal_length, int(self.cut_signal_length / 8))
+#     self.add_to_db(signal_segments, val["mode"], val["severity"], val["oc"])
 # for key, val in l.items():
 #     if "Signal" in key:
 #         print("")
 #         print(key, val["function_record"]["name"])
-

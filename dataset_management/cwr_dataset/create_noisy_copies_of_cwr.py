@@ -12,7 +12,8 @@ from dataset_management.ultils.update_database import DerivedDoc
 
 def process(doc, snr_levels=None):
     if snr_levels is None:
-        snr_levels = [1, 2, 3]
+        # snr_levels = [3, 4, 5, 6]
+        snr_levels = [4, 8, 12, 16,20]
     db,client = make_db("cwr")
     docs = []
     for snr in snr_levels:
@@ -21,7 +22,7 @@ def process(doc, snr_levels=None):
         new_doc.pop("_id")
         # Remove the id field
         new_doc.update({"snr": snr})
-        doc["time_series"] = list(doc["time_series"] + snr*np.random.normal(0,1,len(doc["time_series"])))
+        doc["time_series"] = list(doc["time_series"] + np.random.normal(0, snr**2, len(doc["time_series"])))
         docs.append(new_doc)
 
     db["raw"].insert_many(docs)
@@ -32,7 +33,6 @@ db,client = make_db("cwr")
 # First remove all entries in the database that has snr > 0
 db["raw"].delete_many({"snr": {"$gt": 0}})
 
-print("now")
 
 Parallel(n_jobs=6)(delayed(process)(doc) for doc in tqdm(db["raw"].find({"snr":0})))
 
