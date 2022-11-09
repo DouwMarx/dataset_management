@@ -130,12 +130,17 @@ o = LMS()
 
 # This is used to explore the data channels
 
-# example = o.datasets.items().__iter__().__next__()
-# signal = get_accelerometer_signal(lms_path.joinpath(example[0]))
-#     print(signal.shape)
-#     signal_segments = overlap(signal, self.cut_signal_length, int(self.cut_signal_length / 8))
-#     self.add_to_db(signal_segments, val["mode"], val["severity"], val["oc"])
-# for key, val in l.items():
-#     if "Signal" in key:
-#         print("")
-#         print(key, val["function_record"]["name"])
+example = o.datasets.items().__iter__().__next__()
+mat = loadmat(lms_path.joinpath(example[0]), matlab_compatible=True, simplify_cells=True)
+
+# For channel
+for key, val in mat.items():
+    if "Signal" in key:
+        print("")
+        print(key, val["function_record"]["name"])
+
+# For sampling rate
+print("")
+increment = mat["Signal_1"]["x_values"]["increment"]
+print("'Increment':", increment)
+print("1/increment = fs:",1/increment)
