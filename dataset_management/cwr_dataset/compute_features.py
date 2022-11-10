@@ -18,8 +18,8 @@ def get_sra(sig):
     # Average of the square root absolute value of the signal
     return np.mean(np.sqrt(np.abs(sig)))
 
-def get_kurtosis(sig):
-    return np.log(np.mean(np.power(sig, 4)) / np.power(np.mean(np.power(sig, 2)), 2))
+def get_log_kurtosis(sig):
+    return np.log(np.mean(np.power(sig, 4)) / np.power(np.mean(np.power(sig, 2)), 2)) # Notice that this returns the log kurtosis
 
 def get_crest_factor(sig):
     return np.max(np.abs(sig)) / get_rms(sig)
@@ -27,10 +27,10 @@ def get_crest_factor(sig):
 def get_entropy(sig):
     # min-max normalization
     sig = (sig - np.min(sig)) / (np.max(sig) - np.min(sig))
-    return entropy(sig+1e-10) # Make sure there are no zero values in the signal
+    return entropy(sig+1e-10) # Make sure there are no zero values in the signal by normalizing and adding a small value
 
 def get_skewness(sig):
-    return np.mean(np.power(sig, 3)) / np.power(np.mean(np.power(sig, 2)), 3 / 2)
+    return np.mean(np.power(sig, 3)) / np.power(np.mean(np.power(sig, 2)), 3 / 2) # TODO: Check this expression
 
 def get_frequency_features(sig, rpm=1,fs=1):
     rotation_rate = rpm / 60
@@ -47,38 +47,35 @@ def get_frequency_features(sig, rpm=1,fs=1):
     fft = fft[:len(fft) // 2]
     freqs = freqs[:len(freqs) // 2]
 
-
     # Find the index of the frequency that is closest to the respective fault frequencies
-    frequency_features = {}
+    frequency_features = {"fft": list(fft)} # Store the fft for later use
     for mode, expected_freq in expected_fault_frequencies.items():
         if expected_freq>fs/2:
             raise Warning("Expected fault frequency above the Nyquist frequency")
         for harmonic in range(2,6):
-            index = np.argmin(np.abs(freqs - expected_freq*harmonic))
-            frequency_features[mode + "_h" + str(harmonic)] = fft[index]
-
+            index = np.argmin(np.abs(freqs - expected_freq*harmonic)) # The index of the frequency that is closest to the expected frequency
+            frequency_features[mode + "_h" + str(harmonic)] = fft[index] # The value of the fft at that index
     return frequency_features
 
+# Store all functions used to compute the features in a dictionary
 feature_dict = {"rms": get_rms,
                 "sra": get_sra,
-                "kurtosis": get_kurtosis,
+                "kurtosis": get_log_kurtosis,
                 "crest_factor": get_crest_factor,
                 "entropy": get_entropy,
                 "skewness": get_skewness,
                 "frequency_features": get_frequency_features
                 }
 
-
-
-
 def process(doc):
     client = MongoClient()
     db = client["cwr"]
     collection = db["raw"]
 
+    time_series = doc["time_series"]
+
     # Loop though each entry in the collection
     for key, function in feature_dict.items():
-        time_series = doc["time_series"]
 
         if key == "frequency_features":
             freq_features = function(time_series, rpm=doc["rpm"], fs=doc["sampling_frequency"])
@@ -90,8 +87,7 @@ def process(doc):
 
 # Add the data to the database in parallel
 
-
 client = MongoClient()
 db = client["cwr"]
 
-Parallel(n_jobs=6)(delayed(process)(doc) for doc in tqdm(db["raw"].find()))
+Parallel(n_jobs=10)(delayed(process)(doc) for doc in tqdm(db["raw"].find()))

@@ -28,13 +28,6 @@ def overlap(array, len_chunk, len_sep=1):
     return array_matrix[rows, columns]
 
 
-def get_accelerometer_signal(path_to_mat_file):
-    mat = loadmat(str(path_to_mat_file), matlab_compatible=True, simplify_cells=True)
-    accelerometer_signals = mat["Signal_3"]["y_values"]["values"]
-    accelerometer_1 = accelerometer_signals[:, 0]  # Numbering is not necessarily correct
-    return accelerometer_1
-
-
 def get_metadata_from_csv():
     meta_data_SmithRandal2014 = pd.read_csv("meta_data_tablea2_Smith-Randal-2014.csv", keep_default_na=False)
     meta_data_SmithRandal2014.replace(np.nan, "0",
@@ -48,12 +41,17 @@ class CWR(object):
     """
 
     def __init__(self):
-        rotation_rate = 1772 / 60  # Rev/s
+
+        rpms = np.array([1797,1772,1750,1730])
+        mean_rpm = np.mean(rpms)
+
+        # Use the mean rpm for determining the correct chunk length
+        rotation_rate = mean_rpm/ 60  # Rev/s
         self.sampling_frequency = 12000
 
         # For Ball failure mode having the lowest expected fault frequency
         lowest_expected_fault_frequency = 2.357 * rotation_rate
-        n_events = 15  # TODO: This number of events will not be true for all the operating conditions/speeds
+        n_events = 10  # TODO: This number of events will not be true for all the operating conditions/speeds
         # time required for n_events for highest fault frequency
         duration_for_n_events = n_events / lowest_expected_fault_frequency
         print("Duration for {} events: ".format(n_events), duration_for_n_events)
