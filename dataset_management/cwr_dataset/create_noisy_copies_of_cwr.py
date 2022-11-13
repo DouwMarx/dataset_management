@@ -25,11 +25,10 @@ def get_median_variance():
     print("Median variance: {}".format(median_variance))
     return median_variance
 
-def process(doc, snr_levels=None,median_variance=0.08578):
+def process(doc, snr_levels=None,median_variance=19.145314017798253): # TODO: Automate median variance computation
     if snr_levels is None:
-        # snr_levels = np.logspace(-4, 0, 5)
-        # snr_levels = np.logspace(-3, -2, 2)
-        snr_levels = np.array([0.01])
+        # snr_levels = np.array([0.1])
+        snr_levels = np.logspace(-2, 0, 3)
     # SNR = P_signal / P_noise
     # P_noise = P_signal / SNR
     noise_variance = median_variance / snr_levels
@@ -61,6 +60,7 @@ db["raw"].delete_many({"snr": {"$ne": 0}})
 
 # We compute the median variance of all the time series in the database
 median_variance = get_median_variance()  # about 0.085, hard coded into process function keyword argument
+print("Median variance: {}".format(median_variance))
 
 # Run the process function on all the documents in the database
 

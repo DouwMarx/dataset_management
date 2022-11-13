@@ -1,6 +1,7 @@
 import numpy as np
 import pandas as pd
 from pymongo import MongoClient
+from scipy.stats import kurtosis
 
 from database_definitions import make_db
 from scipy.io import loadmat
@@ -51,7 +52,7 @@ class CWR(object):
 
         # For Ball failure mode having the lowest expected fault frequency
         lowest_expected_fault_frequency = 2.357 * rotation_rate
-        n_events = 10  # TODO: This number of events will not be true for all the operating conditions/speeds
+        n_events = 15  # TODO: This number of events will not be true for all the operating conditions/speeds
         # time required for n_events for highest fault frequency
         duration_for_n_events = n_events / lowest_expected_fault_frequency
         print("Duration for {} events: ".format(n_events), duration_for_n_events)
@@ -136,8 +137,22 @@ class CWR(object):
                          ::4].copy()  # Down sample the healthy data since it is sampled at a different sampling rate than the damaged data. 12kHz vs 48kHz
                 # TODO: Notice that the down-sampling can also be done with different phase.
                 print("Down sampling healthy data, dataset ", meta_data["dataset_number"])
+                print("Healthy data mean and std: ", np.mean(signal), np.std(signal))
+                print("Meta data: ", meta_data)
 
-            percentage_overlap = 0.50 # Notice that this percentage overlap is hardcoded
+            percentage_overlap = 0.5 # Notice that this percentage overlap is hardcoded
+
+            # Detrend the signal
+            healthy_means = np.array([0.012566221256854505, 0.012566221256854505, 0.012462098628751798, 0.012546221933514547]) # TODO: Check and automate
+            healthy_sds = np.array([0.06518318244775856, 0.06518318244775856, 0.06471460757837416, 0.07274115960027262])
+
+            signal = (signal - healthy_means.mean())/healthy_sds.mean()
+
+
+            if meta_data["severity"] == 0:  # The healthy data is sampled at a higher rate, need to downsample
+                print("Healthy data kurtosis:", kurtosis(signal))
+
+
             signal_segments = overlap(signal, self.cut_signal_length, np.floor(
                 self.cut_signal_length * percentage_overlap))  # Segments have half overlap
 

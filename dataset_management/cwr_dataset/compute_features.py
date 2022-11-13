@@ -1,5 +1,6 @@
 import matplotlib.pyplot as plt
 import numpy as np
+import scipy.stats
 from pymongo import MongoClient
 from joblib import Parallel, delayed
 from scipy.stats import entropy
@@ -19,18 +20,16 @@ def get_sra(sig):
     return np.mean(np.sqrt(np.abs(sig)))
 
 def get_log_kurtosis(sig):
-    return np.log(np.mean(np.power(sig, 4)) / np.power(np.mean(np.power(sig, 2)), 2)) # Notice that this returns the log kurtosis
+    return scipy.stats.kurtosis(sig)
 
 def get_crest_factor(sig):
     return np.max(np.abs(sig)) / get_rms(sig)
 
 def get_entropy(sig):
-    # min-max normalization
-    sig = (sig - np.min(sig)) / (np.max(sig) - np.min(sig))
-    return entropy(sig+1e-10) # Make sure there are no zero values in the signal by normalizing and adding a small value
+    return np.nan_to_num(scipy.stats.differential_entropy(sig))
 
 def get_skewness(sig):
-    return np.mean(np.power(sig, 3)) / np.power(np.mean(np.power(sig, 2)), 3 / 2) # TODO: Check this expression
+    return scipy.stats.skew(sig)
 
 def get_frequency_features(sig, rpm=1,fs=1):
     rotation_rate = rpm / 60
@@ -38,8 +37,8 @@ def get_frequency_features(sig, rpm=1,fs=1):
                                   "outer": 3.585 * rotation_rate,
                                   "inner": 5.415 * rotation_rate}
 
-    # Compute the FFT
-    fft = np.fft.fft(sig)
+    # Compute the FFT of the envelope
+    fft = np.fft.fft(np.array(sig)**2)
     fft = np.abs(fft)
     freqs = np.fft.fftfreq(len(sig), 1 / fs)
 
@@ -47,14 +46,18 @@ def get_frequency_features(sig, rpm=1,fs=1):
     fft = fft[:len(fft) // 2]
     freqs = freqs[:len(freqs) // 2]
 
+    fft = fft**2# Using squared spectrum
+
     # Find the index of the frequency that is closest to the respective fault frequencies
-    frequency_features = {"fft": list(fft)} # Store the fft for later use
+    frequency_features = {"fft": list(fft),
+                          "spectral_entropy":np.nan_to_num(scipy.stats.differential_entropy(fft))} # Store the fft for later use
+
     for mode, expected_freq in expected_fault_frequencies.items():
         if expected_freq>fs/2:
             raise Warning("Expected fault frequency above the Nyquist frequency")
         for harmonic in range(2,6):
             index = np.argmin(np.abs(freqs - expected_freq*harmonic)) # The index of the frequency that is closest to the expected frequency
-            frequency_features[mode + "_h" + str(harmonic)] = fft[index] # The value of the fft at that index
+            frequency_features[mode + "_h" + str(harmonic)] = np.mean(fft[index-20:index+20]) # The value of the fft at that index
     return frequency_features
 
 # Store all functions used to compute the features in a dictionary
