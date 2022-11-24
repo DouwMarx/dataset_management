@@ -1,0 +1,6 @@
+name: vsc_setup
+dependencies:
+  - numpy
+  - pymongo
+
+# conda env create -f environment.yml to create this environment
