@@ -15,9 +15,9 @@ def export_data_to_file_structure(dataset_name: str, healthy_data: pd.DataFrame,
         path.mkdir(parents=True, exist_ok=True)
 
     # Export the data to pickle files
-    healthy_data.to_pickle(str(healthy_data_path.joinpath('healthy_data.pkl')))
+    healthy_data.to_pickle(str(healthy_data_path.joinpath('healthy.pkl')))
     for severity, faulty_data in faulty_data_dict.items():
-        faulty_data.to_pickle(str(faulty_data_path.joinpath(f'faulty_data_{severity}.pkl')))
+        faulty_data.to_pickle(str(faulty_data_path.joinpath(f'faulty_{severity}.pkl')))
 
     # Export the metadata to a json file
     with open(str(meta_data_path.joinpath('meta_data.json')), 'w') as f:

@@ -13,11 +13,11 @@ from database_definitions import make_db
 # https://ieeexplore.ieee.org/stamp/stamp.jsp?tp=&arnumber=6823731
 
 def get_rms(sig):
-    return np.sqrt(np.mean(np.square(sig)))
+    return np.sqrt(np.mean(np.square(sig-np.mean(sig))))
 
 def get_sra(sig):
     # Average of the square root absolute value of the signal
-    return np.mean(np.sqrt(np.abs(sig)))
+    return np.mean(np.sqrt(np.abs(sig-np.mean(sig))))
 
 def get_log_kurtosis(sig):
     return scipy.stats.kurtosis(sig)
@@ -57,7 +57,7 @@ def get_frequency_features(sig, rpm=1,fs=1):
             raise Warning("Expected fault frequency above the Nyquist frequency")
         for harmonic in range(2,6):
             index = np.argmin(np.abs(freqs - expected_freq*harmonic)) # The index of the frequency that is closest to the expected frequency
-            frequency_features[mode + "_h" + str(harmonic)] = np.mean(fft[index-20:index+20]) # The value of the fft at that index
+            frequency_features[mode + "_h" + str(harmonic)] = np.mean(fft[index-5:index+5]) # The value of the fft at that index
     return frequency_features
 
 # Store all functions used to compute the features in a dictionary

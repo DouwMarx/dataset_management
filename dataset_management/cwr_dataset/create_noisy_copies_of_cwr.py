@@ -25,7 +25,7 @@ def get_median_variance():
     print("Median variance: {}".format(median_variance))
     return median_variance
 
-def process(doc, snr_levels=None,median_variance=19.145314017798253): # TODO: Automate median variance computation
+def process(doc, snr_levels=None,median_variance=0.08582927368282073): # TODO: Automate median variance computation
     if snr_levels is None:
         # snr_levels = np.array([0.1])
         snr_levels = np.logspace(-2, 0, 3)

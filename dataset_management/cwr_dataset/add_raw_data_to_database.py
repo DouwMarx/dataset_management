@@ -127,6 +127,13 @@ class CWR(object):
         # loop through all files in the pathlib path directory
         for file_name in cwr_path.glob("*.mat"):
             meta_data = self.get_meta_data(file_name.stem)
+
+            # Do not add outer data other than outer centre
+            if "outer" in meta_data["mode"] and "outer centre" not in meta_data["mode"]:
+                print("Skipping data for mode: ", meta_data["mode"])
+                continue
+
+
             path_to_mat_file = cwr_path.joinpath(file_name.name)
             mat = loadmat(str(path_to_mat_file))  # Load the .mat file
             key = [key for key in mat.keys() if "DE" in key][0]  # Here we select the drive-end measurements # TODO: Notice we are using the drive-end measurements
@@ -142,16 +149,11 @@ class CWR(object):
 
             percentage_overlap = 0.5 # Notice that this percentage overlap is hardcoded
 
-            # Detrend the signal
-            healthy_means = np.array([0.012566221256854505, 0.012566221256854505, 0.012462098628751798, 0.012546221933514547]) # TODO: Check and automate
-            healthy_sds = np.array([0.06518318244775856, 0.06518318244775856, 0.06471460757837416, 0.07274115960027262])
-
-            signal = (signal - healthy_means.mean())/healthy_sds.mean()
-
-
-            if meta_data["severity"] == 0:  # The healthy data is sampled at a higher rate, need to downsample
-                print("Healthy data kurtosis:", kurtosis(signal))
-
+            # # Detrend the signal
+            # healthy_means = np.array([0.012566221256854505, 0.012566221256854505, 0.012462098628751798, 0.012546221933514547]) # TODO: Check and automate
+            # healthy_sds = np.array([0.06518318244775856, 0.06518318244775856, 0.06471460757837416, 0.07274115960027262])
+            #
+            # signal = (signal - healthy_means.mean())/healthy_sds.mean()
 
             signal_segments = overlap(signal, self.cut_signal_length, np.floor(
                 self.cut_signal_length * percentage_overlap))  # Segments have half overlap

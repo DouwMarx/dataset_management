@@ -14,16 +14,20 @@ data['target'] = mnist.target
 
 # Create dictionary of dataframes for each class
 data_dict = {}
-for i in data.target.unique():
-    data_dict[str(i)] = data[data.target == i][data.columns[:-1]]
+for label in data.target.unique():
+    data_for_label = data[data.target == label]
+    data_without_label = data_for_label.drop('target', axis=1)
+    data_dict[str(label)] = data_without_label
 
-
+# Currently only creating comparissons between different classes (not including unseen classes)
 for health_key, health_value in data_dict.copy().items():
     for fault_key, fault_value in data_dict.copy().items():
         if fault_key != health_key:
 
             healthy = health_value
             faulty_data_dict = {fault_key: fault_value}
+
+            print(health_value.isna().sum().sum())
 
             ground_truth_fault_direction = np.array(fault_value.mean() - health_value.mean())
             ground_truth_fault_direction = ground_truth_fault_direction / np.linalg.norm(ground_truth_fault_direction)
@@ -37,6 +41,10 @@ for health_key, health_value in data_dict.copy().items():
                                           metadata={'ground_truth_fault_direction': list(ground_truth_fault_direction),
                                                     'dataset_name': name}
                                           )
+
+            # Also create a noisy version of the digits dataset
+            healthy = health_value + np.random.normal(size=health_value.shape)
+
 
         # plt.figure(health_key + "->" + fault_key)
         # example = ground_truth_fault_direction.reshape(8, 8)

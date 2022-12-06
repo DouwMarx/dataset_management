@@ -93,11 +93,12 @@ def generate_random_expected_fault_directions(n_fault_directions, n_features, ex
     return fault_directions
 
 
-p = Process(n_features=20)
+p = Process(n_features=12)
 healthy, faulty_dict = p.take_measurements(n_samples=100, severities=[0.5, 1])
 
 export_data_to_file_structure(dataset_name='linear_gaussian_shift',
                               healthy_data=healthy,
                               faulty_data_dict=faulty_dict,
                               export_path=pathlib.Path("/home/douwm/projects/PhD/code/biased_anomaly_detection/data"),
-                              metadata={'ground_truth_fault_direction': p.fault_direction.tolist()})
+                              metadata={'ground_truth_fault_direction': p.fault_direction.tolist(),
+                                        'dataset_name':'linear_gaussian_shift'},)
