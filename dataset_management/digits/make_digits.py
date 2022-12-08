@@ -10,6 +10,7 @@ from dataset_management.ultils.write_data_in_standard_format import export_data_
 mnist = load_digits()
 
 data = pd.DataFrame(mnist.data)
+
 data['target'] = mnist.target
 
 # Create dictionary of dataframes for each class
@@ -27,10 +28,8 @@ for health_key, health_value in data_dict.copy().items():
             healthy = health_value
             faulty_data_dict = {fault_key: fault_value}
 
-            print(health_value.isna().sum().sum())
-
             ground_truth_fault_direction = np.array(fault_value.mean() - health_value.mean())
-            ground_truth_fault_direction = ground_truth_fault_direction / np.linalg.norm(ground_truth_fault_direction)
+            # ground_truth_fault_direction = ground_truth_fault_direction / np.linalg.norm(ground_truth_fault_direction) # Fault direction is not normalized
 
 
             name = 'digits_health' + health_key + '_fault' + fault_key

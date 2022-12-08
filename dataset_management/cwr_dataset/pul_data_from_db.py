@@ -76,10 +76,10 @@ def get_engineering_feature_data_from_db(oc, sev, snr):
         if len(faulty_test_data) == 0:  # Skip if there is no data
             print("No faulty data for " + print_string)
             return None, None  # Stop the analysis if there is no faulty data
-
     return healthy_data, faulty_test_datasets
 
-def get_fft_data(self):
+def get_frequency_feature_data_from_db(oc, sev, snr):
+
     # Pull the data from the database
     from pymongo import MongoClient
     client = MongoClient()
@@ -88,9 +88,9 @@ def get_fft_data(self):
 
     # Extract the healthy data
     healthy_data = list(collection.find(
-        {"oc": self.oc,
+        {"oc": oc,
          "severity": 0.0,
-         "snr": self.snr,
+         "snr": snr,
          "mode": "healthy",
          },
         {"fft": 1, "_id": 0}  # Only extract the fft field
@@ -98,34 +98,37 @@ def get_fft_data(self):
     )
 
     if len(healthy_data) == 0:  # Skip if there is no data
-        raise ValueError("No healthy data found in the database for operating condition " + str(self.oc))
+        raise ValueError("No healthy frequency data found in the database for operating condition " + str(oc))
     else:
         print("Found {} healthy data points".format(len(healthy_data)))
 
     healthy_data = pd.DataFrame([d["fft"] for d in healthy_data])
 
-    faulty_test_data = list(collection.find(
-        {"oc": self.oc,
-         "severity": self.sev,
-         "snr": self.snr,
-         "mode": self.mode,
-         }
-        ,
-        {"fft": 1, "_id": 0}  # Only extract the fft field
-    )
-    )
 
-    faulty_test_data = pd.DataFrame([d["fft"] for d in faulty_test_data])
+    faulty_test_datasets = {}
+    for fault_mode in "ball", "outer centre", "inner":
+        faulty_test_data = list(collection.find(
+            {"oc": oc,
+             "severity": sev,
+             "snr": snr,
+             "mode": fault_mode,
+             }
+            ,
+            {"fft": 1, "_id": 0}  # Only extract the fft field
+        )
+        )
 
-    # Do a test using random data only to verify that AUC is 0.5
-    # healthy_data = pd.DataFrame(np.random.normal(size=(100, len(features_to_use))), columns=features_to_use)
-    # faulty_test_data = pd.DataFrame(np.random.normal(size=(100, len(features_to_use))), columns=features_to_use)
+        faulty_test_data = pd.DataFrame([d["fft"] for d in faulty_test_data])
 
-    if len(faulty_test_data) == 0:  # Skip if there is no data
-        print("No faulty data for " + self.print_string)
-        return None, None  # Stop the analysis if there is no faulty data
+        faulty_test_datasets[fault_mode] = faulty_test_data
 
-    return healthy_data, faulty_test_data
+        print_string = "OC: " + str(oc) + " SNR: " + str(snr) + " SEV: " + str(sev)
+        if len(faulty_test_data) == 0:  # Skip if there is no data
+            print("No frequency faulty data for " + print_string)
+            return None, None  # Stop the analysis if there is no faulty data
+    return healthy_data, faulty_test_datasets
+
+
 
 from pymongo import MongoClient
 client = MongoClient()
@@ -134,34 +137,24 @@ collection = db["raw"]
 
 for oc, sev, snr in product(collection.distinct("oc"), collection.distinct("severity"), collection.distinct("snr")):
     # Get the healthy data
-    healthy, faulty_data_dict= get_engineering_feature_data_from_db(oc, sev, snr)
+    for extract_function, data_type in zip([get_engineering_feature_data_from_db, get_frequency_feature_data_from_db], ["engineering", "frequency"]):
+        healthy, faulty_data_dict= extract_function(oc, sev, snr)
+        if healthy is not None:
+            print("for OC: {} SNR: {} SEV: {}, lengths are: healthy {}, faulty {}".format(oc, snr, sev, len(healthy), [len(faulty) for faulty in faulty_data_dict.values()]))
 
-    if healthy is not None:
-        print("for OC: {} SNR: {} SEV: {}, lengths are: healthy {}, faulty {}".format(oc, snr, sev, len(healthy), [len(faulty) for faulty in faulty_data_dict.values()]))
+            ground_truth_fault_dir = pd.concat(list(faulty_data_dict.values()), ignore_index=True).mean()-healthy.mean()
+            ground_truth_fault_dir = ground_truth_fault_dir/np.linalg.norm(ground_truth_fault_dir)
+            print("Ground truth fault direction for {}: {}".format(data_type, ground_truth_fault_dir.transpose()))
+            print("")
 
-        ground_truth_fault_dir = pd.concat(list(faulty_data_dict.values()), ignore_index=True).mean()-healthy.mean()
-        ground_truth_fault_dir = ground_truth_fault_dir/np.linalg.norm(ground_truth_fault_dir)
-        print("Ground truth fault direction: {}".format(ground_truth_fault_dir.transpose()))
-        print("")
-
-        name = 'cwr_oc{}_snr{}_sev{}'.format(oc, snr, sev)
-        export_data_to_file_structure(dataset_name=name,
-                                      healthy_data=healthy,
-                                      faulty_data_dict=faulty_data_dict,
-                                      export_path=pathlib.Path(
-                                          "/home/douwm/projects/PhD/code/biased_anomaly_detection/data"),
-                                      metadata={'ground_truth_fault_direction': list(ground_truth_fault_dir),
-                                                'dataset_name': name}
-                                      )
-
-        # print("")
-        # print(len(healthy))
-        # print([len(faulty) for faulty in faulty_dict.values()])
-
-    print(oc, sev, snr)
-    # try:
-    #     get_engineering_feature_data_from_db(oc, sev, snr, mode)
-    # except ValueError as e:
-    #     print(e)
+            name = 'cwr_{}_oc{}_snr{}_sev{}'.format(data_type,oc, snr, sev)
+            export_data_to_file_structure(dataset_name=name,
+                                          healthy_data=healthy,
+                                          faulty_data_dict=faulty_data_dict,
+                                          export_path=pathlib.Path(
+                                              "/home/douwm/projects/PhD/code/biased_anomaly_detection/data"),
+                                          metadata={'ground_truth_fault_direction': list(ground_truth_fault_dir),
+                                                    'dataset_name': name}
+                                          )
 
 
