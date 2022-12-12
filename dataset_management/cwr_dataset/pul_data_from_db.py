@@ -4,6 +4,7 @@ from itertools import product
 import numpy as np
 import pandas as pd
 
+from dataset_management.cwr_dataset.gradient_prescription import get_cwr_expected_fault_behaviour
 from dataset_management.ultils.write_data_in_standard_format import export_data_to_file_structure
 
 
@@ -11,18 +12,21 @@ def get_engineering_feature_data_from_db(oc, sev, snr):
     # Note that features to use is not really required after exporting the data from the database and just loading it from the pickle file
     features_to_use = [
         'rms',
-        'sra',
+        # 'sra',
         'kurtosis',
         'crest_factor',
         # 'skewness',
+        'ball_h1',
         'ball_h2',
         # 'ball_h3',
         'ball_h4',
         # 'ball_h5',
+        'outer_h1',
         'outer_h2',
         # 'outer_h3',
         'outer_h4',
         # 'outer_h5',
+        'inner_h1',
         'inner_h2',
         # 'inner_h3',
         'inner_h4',
@@ -135,17 +139,25 @@ client = MongoClient()
 db = client["cwr"]
 collection = db["raw"]
 
+expected_rpms_for_oc = {oc:rpm for oc, rpm in zip(collection.distinct("oc"), collection.distinct("rpm"))}
+print(expected_rpms_for_oc)
+
 for oc, sev, snr in product(collection.distinct("oc"), collection.distinct("severity"), collection.distinct("snr")):
     # Get the healthy data
     for extract_function, data_type in zip([get_engineering_feature_data_from_db, get_frequency_feature_data_from_db], ["engineering", "frequency"]):
         healthy, faulty_data_dict= extract_function(oc, sev, snr)
-        if healthy is not None:
+        if healthy is not None and snr>0:
             print("for OC: {} SNR: {} SEV: {}, lengths are: healthy {}, faulty {}".format(oc, snr, sev, len(healthy), [len(faulty) for faulty in faulty_data_dict.values()]))
 
             ground_truth_fault_dir = pd.concat(list(faulty_data_dict.values()), ignore_index=True).mean()-healthy.mean()
-            ground_truth_fault_dir = ground_truth_fault_dir/np.linalg.norm(ground_truth_fault_dir)
+            # ground_truth_fault_dir = ground_truth_fault_dir/np.linalg.norm(ground_truth_fault_dir) # Normalisation happens in code
             print("Ground truth fault direction for {}: {}".format(data_type, ground_truth_fault_dir.transpose()))
             print("")
+
+            # Get the expected fault frequency from an example in the dataset
+            example = collection.find_one({"oc": oc, "severity": sev, "snr": snr})
+            example_rpm = example["rpm"]
+            fault_vector = get_cwr_expected_fault_behaviour(len(example["fft"]), example_rpm,plot=True)
 
             name = 'cwr_{}_oc{}_snr{}_sev{}'.format(data_type,oc, snr, sev)
             export_data_to_file_structure(dataset_name=name,
@@ -154,7 +166,8 @@ for oc, sev, snr in product(collection.distinct("oc"), collection.distinct("seve
                                           export_path=pathlib.Path(
                                               "/home/douwm/projects/PhD/code/biased_anomaly_detection/data"),
                                           metadata={'ground_truth_fault_direction': list(ground_truth_fault_dir),
-                                                    'dataset_name': name}
+                                                    'dataset_name': name,
+                                                    'expected_fault_direction': list(fault_vector)}
                                           )
 
 

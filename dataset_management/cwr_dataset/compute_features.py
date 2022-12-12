@@ -38,24 +38,25 @@ def get_frequency_features(sig, rpm=1,fs=1):
                                   "inner": 5.415 * rotation_rate}
 
     # Compute the FFT of the envelope
-    fft = np.fft.fft(np.array(sig)**2)
-    fft = np.abs(fft)
+    fft = np.fft.fft(np.array(sig)**2) # Square the signal to get the envelope
+    fft = np.abs(fft)/len(fft) # Use magnitude and Normalize the fft
     freqs = np.fft.fftfreq(len(sig), 1 / fs)
 
     # Only use the one-sided spectrum
     fft = fft[:len(fft) // 2]
     freqs = freqs[:len(freqs) // 2]
 
-    fft = fft**2# Using squared spectrum
+    # fft = fft**2# Using squared spectrum
 
-    # Find the index of the frequency that is closest to the respective fault frequencies
     frequency_features = {"fft": list(fft),
                           "spectral_entropy":np.nan_to_num(scipy.stats.differential_entropy(fft))} # Store the fft for later use
 
+
+    # Find the index of the frequency that is closest to the respective fault frequencies
     for mode, expected_freq in expected_fault_frequencies.items():
         if expected_freq>fs/2:
             raise Warning("Expected fault frequency above the Nyquist frequency")
-        for harmonic in range(2,6):
+        for harmonic in range(1,6):
             index = np.argmin(np.abs(freqs - expected_freq*harmonic)) # The index of the frequency that is closest to the expected frequency
             frequency_features[mode + "_h" + str(harmonic)] = np.mean(fft[index-5:index+5]) # The value of the fft at that index
     return frequency_features

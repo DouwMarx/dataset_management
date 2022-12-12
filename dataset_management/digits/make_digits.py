@@ -18,7 +18,15 @@ data_dict = {}
 for label in data.target.unique():
     data_for_label = data[data.target == label]
     data_without_label = data_for_label.drop('target', axis=1)
+
+    print(data_without_label.max().max())
+    # Add noise to the data and clip it to the range [0, 255]
+    # noisy_data = data_without_label + np.random.normal(0, 0.2*16, data_without_label.shape)
+    # noisy_data = np.clip(noisy_data, 0, 16)
+    # data_dict[str(label)] = noisy_data
+
     data_dict[str(label)] = data_without_label
+
 
 # Currently only creating comparissons between different classes (not including unseen classes)
 for health_key, health_value in data_dict.copy().items():
@@ -41,10 +49,10 @@ for health_key, health_value in data_dict.copy().items():
                                                     'dataset_name': name}
                                           )
 
-            # Also create a noisy version of the digits dataset
-            healthy = health_value + np.random.normal(size=health_value.shape)
+plt.figure(health_key)
+example = healthy.iloc[0].values.reshape(8, 8)
+plt.imshow(example)
 
-
-        # plt.figure(health_key + "->" + fault_key)
-        # example = ground_truth_fault_direction.reshape(8, 8)
-        # plt.imshow(example)
+plt.figure(health_key + "->" + fault_key)
+example = ground_truth_fault_direction.reshape(8, 8)
+plt.imshow(example)
