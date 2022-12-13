@@ -37,14 +37,18 @@ def get_frequency_features(sig, rpm=1,fs=1):
                                   "outer": 3.585 * rotation_rate,
                                   "inner": 5.415 * rotation_rate}
 
+    # Square signal to get envelope and remove dc component
+    sig = np.array(sig)**2
+    sig = sig - np.mean(sig)
+
     # Compute the FFT of the envelope
-    fft = np.fft.fft(np.array(sig)**2) # Square the signal to get the envelope
-    fft = np.abs(fft)/len(fft) # Use magnitude and Normalize the fft
+    fft = np.fft.fft(sig) # Square the signal to get the envelope
+    fft = np.abs(fft)/len(fft) # Use fft magnitude and Normalize the fft
     freqs = np.fft.fftfreq(len(sig), 1 / fs)
 
-    # Only use the one-sided spectrum
-    fft = fft[:len(fft) // 2]
-    freqs = freqs[:len(freqs) // 2]
+    # Only use the one-sided spectrum and discard the dc component
+    fft = fft[:len(fft) // 2][1:]
+    freqs = freqs[:len(freqs) // 2][1:]
 
     # fft = fft**2# Using squared spectrum
 

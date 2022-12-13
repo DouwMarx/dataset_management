@@ -1,6 +1,7 @@
 import pathlib
 from itertools import product
 
+import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 
@@ -150,24 +151,35 @@ for oc, sev, snr in product(collection.distinct("oc"), collection.distinct("seve
             print("for OC: {} SNR: {} SEV: {}, lengths are: healthy {}, faulty {}".format(oc, snr, sev, len(healthy), [len(faulty) for faulty in faulty_data_dict.values()]))
 
             ground_truth_fault_dir = pd.concat(list(faulty_data_dict.values()), ignore_index=True).mean()-healthy.mean()
-            # ground_truth_fault_dir = ground_truth_fault_dir/np.linalg.norm(ground_truth_fault_dir) # Normalisation happens in code
-            print("Ground truth fault direction for {}: {}".format(data_type, ground_truth_fault_dir.transpose()))
-            print("")
-
-            # Get the expected fault frequency from an example in the dataset
-            example = collection.find_one({"oc": oc, "severity": sev, "snr": snr})
-            example_rpm = example["rpm"]
-            fault_vector = get_cwr_expected_fault_behaviour(len(example["fft"]), example_rpm,plot=True)
+            # print("Ground truth fault direction for {}: {}".format(data_type, ground_truth_fault_dir.transpose()))
+            # print("")
 
             name = 'cwr_{}_oc{}_snr{}_sev{}'.format(data_type,oc, snr, sev)
-            export_data_to_file_structure(dataset_name=name,
-                                          healthy_data=healthy,
-                                          faulty_data_dict=faulty_data_dict,
-                                          export_path=pathlib.Path(
-                                              "/home/douwm/projects/PhD/code/biased_anomaly_detection/data"),
-                                          metadata={'ground_truth_fault_direction': list(ground_truth_fault_dir),
-                                                    'dataset_name': name,
-                                                    'expected_fault_direction': list(fault_vector)}
-                                          )
+            metadata = {'ground_truth_fault_direction': list(ground_truth_fault_dir),
+                        'dataset_name': name}
+
+            # Get the expected fault frequency from an example in the dataset
+            if data_type == "frequency":
+                example = collection.find_one({"oc": oc, "severity": sev, "snr": snr})
+                example_rpm = example["rpm"]
+                fault_vector = get_cwr_expected_fault_behaviour(len(example["fft"]), example_rpm,plot=False)
+
+                metadata.update({'expected_fault_direction': list(fault_vector)})
+
+                plt.figure()
+                plt.title("OC: {} SNR: {} SEV: {}".format(oc, snr, sev))
+                for key,faulty_data in faulty_data_dict.items():
+                    plt.plot(faulty_data.mean(), label=key)
+                plt.plot(healthy.mean(), label="healthy")
+                plt.plot(fault_vector)
+                plt.legend()
+
+            # export_data_to_file_structure(dataset_name=name,
+            #                               healthy_data=healthy,
+            #                               faulty_data_dict=faulty_data_dict,
+            #                               export_path=pathlib.Path(
+            #                                   "/home/douwm/projects/PhD/code/biased_anomaly_detection/data"),
+            #                                 metadata=metadata
+            #                               )
 
 

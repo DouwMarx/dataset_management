@@ -51,13 +51,15 @@ def get_cwr_expected_fault_behaviour(siglen,rpm,plot=False):
                                   "inner": 5.415 * rotation_rate}
     sig = np.arange(0,siglen,1)
 
-    freqs = np.fft.rfftfreq(sig.size, d=1/12000)
+    freqs = np.fft.rfftfreq(sig.size*2, d=1/12000)
+    freqs = freqs[0:siglen]
     obj = TriangularPeaks(healthy_ses_freq=freqs)
 
     peaks = 0
     for fault_freq in expected_fault_frequencies.values():
-        peaks = peaks + obj.get_augmentation(1, fault_freq)
+        peaks = peaks + obj.get_augmentation(0.98, fault_freq)
         # break
+    peaks+=0.02
 
     if plot:
         # Plot the peaks
