@@ -41,7 +41,7 @@ class CWR(object):
     Used to add the CWR data to mongodb
     """
 
-    def __init__(self):
+    def __init__(self,signal_cut_length = None):
 
         rpms = np.array([1797,1772,1750,1730])
         mean_rpm = np.mean(rpms)
@@ -50,17 +50,21 @@ class CWR(object):
         rotation_rate = mean_rpm/ 60  # Rev/s
         self.sampling_frequency = 12000
 
-        # For Ball failure mode having the lowest expected fault frequency
-        lowest_expected_fault_frequency = 2.357 * rotation_rate
-        n_events = 15  # TODO: This number of events will not be true for all the operating conditions/speeds
-        # time required for n_events for highest fault frequency
-        duration_for_n_events = n_events / lowest_expected_fault_frequency
-        print("Duration for {} events: ".format(n_events), duration_for_n_events)
-        # number of samples for 10 revolutions
-        n_samples_n_events = duration_for_n_events * self.sampling_frequency
-        self.cut_signal_length = int(
-            np.floor(n_samples_n_events / 2) * 2)  # Ensure that the signals have an even length
-        print("Cutting signals in length: ", self.cut_signal_length)
+        if signal_cut_length is None:
+            # For Ball failure mode having the lowest expected fault frequency
+            lowest_expected_fault_frequency = 2.357 * rotation_rate
+            n_events = 60  # TODO: This number of events will not be true for all the operating conditions/speeds
+            # time required for n_events for highest fault frequency
+            duration_for_n_events = n_events / lowest_expected_fault_frequency
+            print("Duration for {} events: ".format(n_events), duration_for_n_events)
+            # number of samples for 10 revolutions
+            n_samples_n_events = duration_for_n_events * self.sampling_frequency
+            self.cut_signal_length = int(
+                np.floor(n_samples_n_events / 2) * 2)  # Ensure that the signals have an even length
+
+        else:
+            self.cut_signal_length = signal_cut_length
+            print("Cutting signals in length: ", self.cut_signal_length)
 
         self.smith_randal_meta_data = get_metadata_from_csv()
 
@@ -165,6 +169,6 @@ class CWR(object):
         return self.db
 
 
-o = CWR()
+o = CWR()#signal_cut_length=10000)
 db = o.add_all_to_db()
 print("Signal length:", o.cut_signal_length)

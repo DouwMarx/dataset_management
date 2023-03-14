@@ -9,6 +9,8 @@ from tqdm import tqdm
 from dataset_management.ultils.mongo_test_train_split import test_train_split
 from scipy.io import loadmat
 from file_definitions import lms_path
+import matplotlib.pyplot as plt
+
 
 def overlap(array, len_chunk, len_sep=1):
     """Returns a matrix of all full overlapping chunks of the input `array`, with a chunk
@@ -31,24 +33,16 @@ def overlap(array, len_chunk, len_sep=1):
     return array_matrix[rows, columns]
 
 
-def get_accelerometer_signal(path_to_mat_file):
-    mat = loadmat(str(path_to_mat_file), matlab_compatible=True, simplify_cells=True)
-    accelerometer_signals = mat["Signal_3"]["y_values"]["values"]
-    accelerometer_1 = accelerometer_signals[:,0] # Numbering is not necessarily correct
-    return accelerometer_1
-
-
 class LMS(object):
     """
     Used to add the IMS data to mongodb
     """
 
     def __init__(self):
-
         self.datasets = {
-            "SOR2.mat":{"mode":"outer",
-                                     "oc":2,
-                                     "severity":1},
+            "SOR2.mat": {"mode": "outer",
+                         "oc": 2,
+                         "severity": 1},
             "SOR1.mat": {"mode": "outer",
                          "oc": 1,
                          "severity": 1},
@@ -79,68 +73,130 @@ class LMS(object):
 
         }
 
-        self.lms_meta_data = {"sampling_frequency":51200}
+        # The ranges for different speeds as read from the plotted speed signal
+        self.speed_ranges = {"4": [int(3.013e6), int(3.423e6)],
+                             "3": [int(2.216e6), int(2.704e6)],
+                             "2": [int(1.664e6), int(1.958e6)],
+                             "1": [int(9.05e5), int(1.261e6)]}
 
-        p = lms_path.joinpath("MIR2.mat")
-        signal = get_accelerometer_signal(p)
-        signal_length = len(signal)
+        self.lms_meta_data = {"sampling_frequency": 51200}
 
         fs = 51200  # Sampling rate derived from increment parameter in the "x_values" field
         rotation_speed = 20  # rev/s
         # time for 10 revolutions
-        t_10revs = 10 / rotation_speed
+        t_10revs = 14 / rotation_speed
         # number of samples for 10 revolutions
         n_samples_10revs = t_10revs * fs
         self.cut_signal_length = int(n_samples_10revs)
         print("Cutting signals in length: ", self.cut_signal_length)
 
-        # signal_segments = signal[0:signal_length-signal_length%cut_signal_length].reshape(-1,cut_signal_length)
-        # self.signal_segments = overlap(signal, cut_signal_length, int(cut_signal_length / 2))
-
-        self.db,self.client = make_db("lms")
+        self.db, self.client = make_db("lms")
         self.db.drop_collection("raw")
 
+        # From SKF website for bearing 2206 EKTN9
+        self.freq_per_rpm = {
+            "cage": 0.394,
+            "ball": 2.196,
+            "inner": 7.276,
+            "outer": 4.724
+        }
 
-    def create_document(self, time_series_data, fault_class, severity,operating_condition):
+    def get_accelerometer_signal(self, path_to_mat_file):
+        mat = loadmat(str(path_to_mat_file), matlab_compatible=True, simplify_cells=True)
+        signals = []
+        accelerometer_signals = mat["Signal_3"]["y_values"]["values"]  # Signal_3 is the accelerometer
+        speed_signal = mat["Signal_1"]["y_values"]["values"]  # Signal_1 is the speed signal
+        speed_correction_factor = mat["Signal_1"]["y_values"]["quantity"]["unit_transformation"]["factor"]
+
+        if "IR" in path_to_mat_file.name:
+            freq = self.freq_per_rpm["inner"]
+        elif "OR" in path_to_mat_file.name:
+            freq = self.freq_per_rpm["outer"]
+        else:
+            freq = np.nan
+
+        for accelerometer in [0, 1]:
+            sig = accelerometer_signals[:, accelerometer]  # Numbering is not necessarily correct
+            for speed, samples in self.speed_ranges.items():
+                average_speed = np.mean(speed_signal[samples[0]:samples[1]])*speed_correction_factor # In RPM
+                print("average speed: ", average_speed, "RPM")
+                signals.append({"signal": sig[samples[0]:samples[1]],
+                                "speed": average_speed,
+                                "accelerometer": accelerometer,
+                                "expected_fault_frequency": freq*average_speed/60,
+                                })
+        return signals
+
+    def create_document(self, time_series_data, fault_class, severity, operating_condition, accelerometer_number,
+                        speed,expected_fault_frequency):
         doc = {"mode": fault_class,
                "severity": severity,
                "meta_data": self.lms_meta_data,
                "time_series": list(time_series_data),
-               "oc":operating_condition
+               "oc": operating_condition,
+               "accelerometer_number": accelerometer_number,
+               "speed": speed,
+                "expected_fault_frequency": expected_fault_frequency
                }
         return doc
 
-    def add_to_db(self,signal_segments,mode,severity,operating_condition):
-        docs = [self.create_document(signal,mode,severity,operating_condition) for signal in signal_segments]
+    def add_to_db(self, signal_segments, mode, severity, operating_condition, accelerometer_number, speed, expected_fault_frequency):
+        docs = [self.create_document(signal, mode, severity, operating_condition, accelerometer_number, speed,expected_fault_frequency) for
+                signal in
+                signal_segments]
 
-        # TODO: Add the test functionality here to make it around the healhty damage treshold
+        # TODO: Add the test functionality here to make it around the healthy damage treshold
         self.db["raw"].insert_many(docs)
 
     def add_all_to_db(self):
-        for key,val in tqdm(self.datasets.items()):
-            signal = get_accelerometer_signal(lms_path.joinpath(key))[-51200*10:] # Use the last 10 seconds of data for each trial
-            print(signal.shape)
-            signal_segments = overlap(signal, self.cut_signal_length, int(self.cut_signal_length / 8))
-            self.add_to_db(signal_segments,val["mode"],val["severity"],val["oc"])
+        for key, val in tqdm(self.datasets.items()):  # TODO: Notice use of last 10 seconds of data
+            signals = self.get_accelerometer_signal(lms_path.joinpath(key))
+
+            for signal in signals:
+                signal_segments = overlap(signal["signal"], self.cut_signal_length, int(self.cut_signal_length / 8))
+                self.add_to_db(signal_segments, val["mode"], val["severity"], val["oc"], signal["accelerometer"],
+                               signal["speed"],signal["expected_fault_frequency"])
+
 
 o = LMS()
-# o.add_all_to_db()
+
+o.add_all_to_db()
 
 # Accelerometer data is "Signal_3", There are two channels for signal 3, one for each of the accelerometers
-
 # This is used to explore the data channels
 
-example = o.datasets.items().__iter__().__next__()
-mat = loadmat(lms_path.joinpath(example[0]), matlab_compatible=True, simplify_cells=True)
+# example = o.datasets.items().__iter__().__next__()
+# mat = loadmat(lms_path.joinpath(example[0]), matlab_compatible=True, simplify_cells=True)
 
-# For channel
-for key, val in mat.items():
-    if "Signal" in key:
-        print("")
-        print(key, val["function_record"]["name"])
+# # For channel
+# for key, val in mat.items():
+#     if "Signal" in key:
+#         print("")
+#         print(key, val["function_record"]["name"])
+#
+# # For sampling rate
+# print("")
+# increment = mat["Signal_1"]["x_values"]["increment"]
+# print("'Increment':", increment)
+# print("1/increment = fs:", 1 / increment)
+#
+# # Plot the three tacho signals
+# # plt.figure()
+# # for i in range(1,4):
+# #     plt.plot(mat["Signal_{}".format(i)]["y_values"]["values"],label="Signal_{}".format(i))
+# # plt.legend()
+# # Signal 1 is the processed tacho that is likely in RPM
+#
+# plt.figure()
+# sigs = mat["Signal_3"]["y_values"]["values"][int(2e6):int(3e6)]
+# for name,sig in enumerate(sigs.T):
+#     plt.plot(sig, label=name)
+#     plt.legend()
 
-# For sampling rate
-print("")
-increment = mat["Signal_1"]["x_values"]["increment"]
-print("'Increment':", increment)
-print("1/increment = fs:",1/increment)
+
+#
+# # Sample ranges of the different speeds read from the graph
+# ranges = {"4": [int(3.013e6), int(3.423e6)],
+#           "3": [int(2.216e6), int(2.704e6)],
+#           "2": [int(1.664e6), int(1.958e6)],
+#           "1": [int(9.05e5), int(1.261e6)]}
