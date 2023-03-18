@@ -79,6 +79,17 @@ class CWR(object):
 
         self.db, self.client = make_db("cwr")
 
+        # Add the characteristic number of faults per revolution to the meta data
+        self.n_faults_per_revolution = {mode : self.get_expected_fault_frequency_for_mode(mode,60) for mode in ["inner","outer","ball"]}
+
+        # Add a document to the db with _id meta_data to store the meta data
+        self.db["meta_data"].insert_one({"_id": "meta_data",
+                                         "signal_length": self.cut_signal_length,
+                                         "sampling_frequency": self.sampling_frequency,
+                                         "n_faults_per_revolution": self.n_faults_per_revolution,
+                                         "dataset_name": "CWR",
+                                         })
+
     def get_expected_fault_frequency_for_mode(self, mode, rpm):
         rotation_rate = rpm / 60  # Rev/s
         # Fault frequencies from Smith and Randal 2014
@@ -118,7 +129,7 @@ class CWR(object):
         meta_data = {"severity": fault_width,
                      "oc": int(hp),  # Operating condition
                      "snr": 0,  # Signal-to-noise ratio is zero for the raw data
-                     "mode": mode,
+                     "mode": mode, # Note that the mode is sometimes more descriptive like outer orthogonal. Here we only use the "outer centre" for now.
                      "rpm": int(rpm),
                      "expected_fault_frequency": float(
                          expected_fault_frequency) if expected_fault_frequency != None else None,
@@ -133,9 +144,13 @@ class CWR(object):
             meta_data = self.get_meta_data(file_name.stem)
 
             # Do not add outer data other than outer centre
-            if "outer" in meta_data["mode"] and "outer centre" not in meta_data["mode"]:
-                print("Skipping data for mode: ", meta_data["mode"])
-                continue
+            # Also, rename the outer centre data to just outer
+            if "outer" in meta_data["mode"]:
+                if "centre" in meta_data["mode"]:
+                    meta_data["mode"] = "outer"
+                else:
+                    print("Skipping data for mode: ", meta_data["mode"])
+                    continue
 
 
             path_to_mat_file = cwr_path.joinpath(file_name.name)
@@ -153,12 +168,6 @@ class CWR(object):
 
             percentage_overlap = 0.5 # Notice that this percentage overlap is hardcoded
 
-            # # Detrend the signal
-            # healthy_means = np.array([0.012566221256854505, 0.012566221256854505, 0.012462098628751798, 0.012546221933514547]) # TODO: Check and automate
-            # healthy_sds = np.array([0.06518318244775856, 0.06518318244775856, 0.06471460757837416, 0.07274115960027262])
-            #
-            # signal = (signal - healthy_means.mean())/healthy_sds.mean()
-
             signal_segments = overlap(signal, self.cut_signal_length, np.floor(
                 self.cut_signal_length * percentage_overlap))  # Segments have half overlap
 
@@ -169,6 +178,6 @@ class CWR(object):
         return self.db
 
 
-o = CWR()#signal_cut_length=10000)
+o = CWR()
 db = o.add_all_to_db()
 print("Signal length:", o.cut_signal_length)

@@ -64,10 +64,10 @@ class LMS(object):
             "LOR1.mat": {"mode": "outer",
                          "oc": 1,
                          "severity": 2},
-            "HEA2.mat": {"mode": "health",
+            "HEA2.mat": {"mode": "healthy",
                          "oc": 2,
                          "severity": 0},
-            "HEA1.mat": {"mode": "health",
+            "HEA1.mat": {"mode": "healthy",
                          "oc": 1,
                          "severity": 0},
 
@@ -81,25 +81,37 @@ class LMS(object):
 
         self.lms_meta_data = {"sampling_frequency": 51200}
 
-        fs = 51200  # Sampling rate derived from increment parameter in the "x_values" field
+        self.sampling_frequency = 51200  # Sampling rate derived from increment parameter in the "x_values" field
         rotation_speed = 20  # rev/s
         # time for 10 revolutions
         t_10revs = 14 / rotation_speed
         # number of samples for 10 revolutions
-        n_samples_10revs = t_10revs * fs
+        n_samples_10revs = t_10revs * self.sampling_frequency
         self.cut_signal_length = int(n_samples_10revs)
         print("Cutting signals in length: ", self.cut_signal_length)
 
         self.db, self.client = make_db("lms")
+
+        # Drop the previous data
         self.db.drop_collection("raw")
+        self.db.drop_collection("meta_data")
 
         # From SKF website for bearing 2206 EKTN9
         self.freq_per_rpm = {
-            "cage": 0.394,
+            # "cage": 0.394,
             "ball": 2.196,
             "inner": 7.276,
             "outer": 4.724
         }
+
+        # Add a document to the db with _id meta_data to store the meta data
+        self.db["meta_data"].insert_one({"_id": "meta_data",
+                                         "signal_length": self.cut_signal_length,
+                                         "sampling_frequency": self.sampling_frequency,
+                                         "n_faults_per_revolution": self.freq_per_rpm,
+                                         "dataset_name": "CWR",
+                                         })
+
 
     def get_accelerometer_signal(self, path_to_mat_file):
         mat = loadmat(str(path_to_mat_file), matlab_compatible=True, simplify_cells=True)
@@ -117,11 +129,14 @@ class LMS(object):
 
         for accelerometer in [0, 1]:
             sig = accelerometer_signals[:, accelerometer]  # Numbering is not necessarily correct
-            for speed, samples in self.speed_ranges.items():
-                average_speed = np.mean(speed_signal[samples[0]:samples[1]])*speed_correction_factor # In RPM
-                print("average speed: ", average_speed, "RPM")
+            for speed, samples in self.speed_ranges.items(): # TODO: Need to verify that speed ranges are correct
+                speed_samples = speed_signal[samples[0]:samples[1]]*speed_correction_factor # In RPM
+                average_speed = np.mean(speed_samples)
+                speed_fluctuation = np.std(speed_samples)
+                print("average speed: ", average_speed, "RPM", "speed fluctuation: ", speed_fluctuation, "RPM" )
                 signals.append({"signal": sig[samples[0]:samples[1]],
-                                "speed": average_speed,
+                                "rpm": average_speed,
+                                "rpm_fluctuation": speed_fluctuation,
                                 "accelerometer": accelerometer,
                                 "expected_fault_frequency": freq*average_speed/60,
                                 })
@@ -135,7 +150,9 @@ class LMS(object):
                "time_series": list(time_series_data),
                "oc": operating_condition,
                "accelerometer_number": accelerometer_number,
-               "speed": speed,
+               "rpm": speed,
+               "snr": 0,
+               "sampling_frequency": self.lms_meta_data["sampling_frequency"],
                 "expected_fault_frequency": expected_fault_frequency
                }
         return doc
@@ -155,7 +172,7 @@ class LMS(object):
             for signal in signals:
                 signal_segments = overlap(signal["signal"], self.cut_signal_length, int(self.cut_signal_length / 8))
                 self.add_to_db(signal_segments, val["mode"], val["severity"], val["oc"], signal["accelerometer"],
-                               signal["speed"],signal["expected_fault_frequency"])
+                               signal["rpm"],signal["expected_fault_frequency"])
 
 
 o = LMS()
