@@ -66,6 +66,11 @@ def add_noisy_copies_of_dataset(dataset_name,snr_levels=None,parallel=True):
         for doc in list(db["raw"].find({"snr":0})):
             process(dataset_name, doc = doc,snr_levels=snr_levels,median_variance=median_variance)
 
+def main(db_name):
+    add_noisy_copies_of_dataset(db_name,snr_levels=np.logspace(-2, 0, 3),parallel=True)
 
-db_name = "lms"
-add_noisy_copies_of_dataset(db_name,snr_levels=np.logspace(-2, 0, 3),parallel=True)
+if __name__ == "__main__":
+    db_name = "cwr"
+    main(db_name)
+
+

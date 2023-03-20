@@ -5,28 +5,10 @@ from scipy.stats import kurtosis
 
 from database_definitions import make_db
 from scipy.io import loadmat
+
+from dataset_management.ultils import processing, create_noisy_copies_of_dataset, compute_features
+from dataset_management.ultils.time_frequency import get_signal_length_for_number_of_events
 from file_definitions import cwr_path
-
-
-def overlap(array, len_chunk, len_sep=1):
-    """Returns a matrix of all full overlapping chunks of the input `array`, with a chunk
-    length of `len_chunk` and a separation length of `len_sep`. Begins with the first full
-    chunk in the array.
-
-     from https://stackoverflow.com/questions/38163366/split-list-into-separate-but-overlapping-chunks
-     """
-
-    n_arrays = int(np.ceil((array.size - len_chunk + 1) / len_sep))
-
-    array_matrix = np.tile(array, n_arrays).reshape(n_arrays, -1)
-
-    columns = np.array(((len_sep * np.arange(0, n_arrays)).reshape(n_arrays, -1) + np.tile(
-        np.arange(0, len_chunk), n_arrays).reshape(n_arrays, -1)), dtype=np.intp)
-
-    rows = np.array((np.arange(n_arrays).reshape(n_arrays, -1) + np.tile(
-        np.zeros(len_chunk), n_arrays).reshape(n_arrays, -1)), dtype=np.intp)
-
-    return array_matrix[rows, columns]
 
 
 def get_metadata_from_csv():
@@ -41,7 +23,9 @@ class CWR(object):
     Used to add the CWR data to mongodb
     """
 
-    def __init__(self,signal_cut_length = None):
+    def __init__(self,percentage_overlap = 0.5):
+
+        self.percentage_overlap = percentage_overlap
 
         rpms = np.array([1797,1772,1750,1730])
         mean_rpm = np.mean(rpms)
@@ -50,21 +34,11 @@ class CWR(object):
         rotation_rate = mean_rpm/ 60  # Rev/s
         self.sampling_frequency = 12000
 
-        if signal_cut_length is None:
-            # For Ball failure mode having the lowest expected fault frequency
-            lowest_expected_fault_frequency = 2.357 * rotation_rate
-            n_events = 60  # TODO: This number of events will not be true for all the operating conditions/speeds
-            # time required for n_events for highest fault frequency
-            duration_for_n_events = n_events / lowest_expected_fault_frequency
-            print("Duration for {} events: ".format(n_events), duration_for_n_events)
-            # number of samples for 10 revolutions
-            n_samples_n_events = duration_for_n_events * self.sampling_frequency
-            self.cut_signal_length = int(
-                np.floor(n_samples_n_events / 2) * 2)  # Ensure that the signals have an even length
-
-        else:
-            self.cut_signal_length = signal_cut_length
-            print("Cutting signals in length: ", self.cut_signal_length)
+        min_n_events_per_rev = 2.357
+        min_events = 10
+        self.cut_signal_length = get_signal_length_for_number_of_events(mean_rpm, min_n_events_per_rev,
+                                                                        self.sampling_frequency, min_events)
+        print("The cut signal length is: {}".format(self.cut_signal_length))
 
         self.smith_randal_meta_data = get_metadata_from_csv()
 
@@ -166,18 +140,19 @@ class CWR(object):
                 print("Healthy data mean and std: ", np.mean(signal), np.std(signal))
                 print("Meta data: ", meta_data)
 
-            percentage_overlap = 0.5 # Notice that this percentage overlap is hardcoded
 
-            signal_segments = overlap(signal, self.cut_signal_length, np.floor(
-                self.cut_signal_length * percentage_overlap))  # Segments have half overlap
-
-            print("Number of signal segments extracted: ", signal_segments.shape[0])
+            signal_segments = processing.overlap(signal, self.cut_signal_length, self.percentage_overlap )  # Segments have half overlap
 
             self.add_to_db(signal_segments, meta_data)
-
         return self.db
 
 
-o = CWR()
-db = o.add_all_to_db()
-print("Signal length:", o.cut_signal_length)
+
+print("Adding CWR data to db")
+CWR().add_all_to_db()
+
+print("\n \n Creating noisy copies of the data")
+create_noisy_copies_of_dataset.main("cwr")
+
+print("\n \n Computing features")
+compute_features.main("cwr")
