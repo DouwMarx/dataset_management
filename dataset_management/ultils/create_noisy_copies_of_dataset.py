@@ -48,7 +48,7 @@ def process(db_name,doc, snr_levels=None,median_variance=0.08582927368282073): #
     client.close()
 
 def add_noisy_copies_of_dataset(dataset_name,snr_levels=None,parallel=True):
-    db,client = make_db("cwr")
+    db,client = make_db(dataset_name)
 
     # First remove all entries in the database that has snr > 0 (Keep only the raw clean,unmodified data)
     db["raw"].delete_many({"snr": {"$ne": 0}})

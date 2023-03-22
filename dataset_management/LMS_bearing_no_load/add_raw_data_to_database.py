@@ -1,17 +1,9 @@
-import pathlib
-import random
-from datetime import datetime
 import numpy as np
-import pandas as pd
-from scipy.signal import find_peaks
-
 from database_definitions import make_db
 from dataset_management.ultils import processing, create_noisy_copies_of_dataset, compute_features
+from dataset_management.ultils.pul_data_from_db import get_data_from_db_and_save_to_file
 from dataset_management.ultils.time_frequency import get_signal_length_for_number_of_events
-from file_definitions import ims_path
-from pypm.phenomenological_bearing_model.bearing_model import Bearing
 from tqdm import tqdm
-from dataset_management.ultils.mongo_test_train_split import test_train_split
 from scipy.io import loadmat
 from file_definitions import lms_path
 import matplotlib.pyplot as plt
@@ -78,7 +70,7 @@ class LMS(object):
             #              "trail": 3,
             #              "severity": 2,
             #              "oc_ranges_mega": [
-            #                  [0.710, 1.110],
+           #                  [0.710, 1.110],
             #                  [1.614,1.849],
             #                  [2.297,2.621],
             #                  [3.074,3.382],
@@ -155,7 +147,6 @@ class LMS(object):
 
         # Add a document to the db with _id meta_data to store the meta data
         self.db["meta_data"].insert_one({"_id": "meta_data",
-                                         "signal_length": self.cut_signal_length,
                                          "sampling_frequency": self.sampling_frequency,
                                          "n_faults_per_revolution": self.n_events_per_rev,
                                          "dataset_name": "CWR",
@@ -163,7 +154,6 @@ class LMS(object):
                                          "cut_signal_length": self.cut_signal_length,
                                          })
 
-    # def get_accelerometer_signal(self, path_to_mat_file: pathlib.Path, segments_to_extract: dict):
     def get_accelerometer_signal(self,dataset_dict_key):
         path_to_mat_file = lms_path.joinpath(dataset_dict_key)
         segments_to_extract = self.datasets[dataset_dict_key]["oc_ranges_mega"]
@@ -185,7 +175,8 @@ class LMS(object):
             speed_fluctuation = np.std(speed_samples)
             print("average speed: ", average_speed, "RPM", "speed fluctuation: ", speed_fluctuation, "RPM")
 
-            for accelerometer in [0, 1]:
+            for accelerometer in [0]: # TODO: Notice we are only using the first accelerometer
+            # for accelerometer in [0, 1]:
                 sig = accelerometer_signals[:, accelerometer]  # Numbering is not necessarily correct
 
                 signals_at_oc.append({"signal": sig[start_id:end_id],  # Use only the cut out segment
@@ -288,7 +279,8 @@ create_noisy_copies_of_dataset.main("lms")
 print("\n \n Computing features")
 compute_features.main("lms")
 
-
+print("\n \n Writing datasets to file")
+get_data_from_db_and_save_to_file("lms")
 
 # Usefull for diagnosing channels
 # Accelerometer data is "Signal_3", There are two channels for signal 3, one for each of the accelerometers

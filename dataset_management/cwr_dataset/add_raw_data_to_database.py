@@ -7,6 +7,7 @@ from database_definitions import make_db
 from scipy.io import loadmat
 
 from dataset_management.ultils import processing, create_noisy_copies_of_dataset, compute_features
+from dataset_management.ultils.pul_data_from_db import get_data_from_db_and_save_to_file
 from dataset_management.ultils.time_frequency import get_signal_length_for_number_of_events
 from file_definitions import cwr_path
 
@@ -62,6 +63,7 @@ class CWR(object):
                                          "sampling_frequency": self.sampling_frequency,
                                          "n_faults_per_revolution": self.n_faults_per_revolution,
                                          "dataset_name": "CWR",
+                                         "cut_signal_length": self.cut_signal_length,
                                          })
 
     def get_expected_fault_frequency_for_mode(self, mode, rpm):
@@ -156,3 +158,6 @@ create_noisy_copies_of_dataset.main("cwr")
 
 print("\n \n Computing features")
 compute_features.main("cwr")
+
+print("\n \n Writing datasets to file")
+get_data_from_db_and_save_to_file("cwr")
