@@ -146,31 +146,31 @@ def get_data_from_db_and_save_to_file(db_name):
                                                    ignore_index=True).mean() - healthy.mean()
 
                 if data_type == "engineering":
-                    meta_data.update({"expected_fault_direction": np.ones(len(ground_truth_fault_dir))})
+                    meta_data.update({"expected_fault_direction": list(np.ones(len(ground_truth_fault_dir)))})
                 elif data_type == "frequency":
                     cumulative_expected_fault_direction = np.zeros(len(ground_truth_fault_dir))
                     for mode,expected_fault_freq in faulty_test_data_expected_fault_freqs.items():
                         expected_fault_direction = peak_simulator.get_expected_fault_behaviour(1,expected_fault_freq)
-                        meta_data.update({"expected_fault_direction_" + mode: expected_fault_direction})
+                        meta_data.update({"expected_fault_direction_" + mode: list(expected_fault_direction)})
                         cumulative_expected_fault_direction += expected_fault_direction
-                    meta_data.update({"expected_fault_direction": cumulative_expected_fault_direction})
+                        meta_data.update({"expected_fault_direction": list(cumulative_expected_fault_direction)})
 
 
                 name = db_name + '_{}_oc{}_snr{}_sev{}'.format(data_type, oc, snr, sev)
-                metadata = {
+                meta_data.update({
                     'ground_truth_fault_direction': list(ground_truth_fault_dir),
                     'dataset_name': name,
                     "snr": snr,
-                }
+                })
 
-                metadata.update(db_metadata)
+                meta_data.update(db_metadata)
 
                 export_data_to_file_structure(dataset_name=name,
                                               healthy_data=healthy,
                                               faulty_data_dict=faulty_data_dict,
                                               export_path=pathlib.Path(
                                                   "/home/douwm/projects/PhD/code/biased_anomaly_detection/data"),
-                                              metadata=metadata
+                                              metadata=meta_data
                                               )
 
 def main():
