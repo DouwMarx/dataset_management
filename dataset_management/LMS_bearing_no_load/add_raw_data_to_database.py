@@ -123,10 +123,11 @@ class LMS(object):
         self.sampling_frequency = 51200  # Sampling rate derived from increment parameter in the "x_values" field
 
         # Get the length for the slowest speed, the slowest fault frequency to have 10 fault events
-        min_rpm = 610
+        # min_rpm = 610
+        mean_rpm = 1500
         min_events_per_rev = 2.196  # Ball fault frequency
-        min_events = 10
-        self.cut_signal_length = get_signal_length_for_number_of_events(min_rpm, min_events_per_rev,
+        min_events = 8
+        self.cut_signal_length = get_signal_length_for_number_of_events(mean_rpm, min_events_per_rev,
                                                                         self.sampling_frequency, min_events)
         print("Cut signal length: {}".format(self.cut_signal_length))
 
@@ -171,23 +172,23 @@ class LMS(object):
             end_id = int(samples[1] * 1e6)
 
             speed_samples = speed_signal[start_id:end_id] * speed_correction_factor  # In RPM
-            average_speed = np.mean(speed_samples)
+            median_speed = np.median(speed_samples)
             speed_fluctuation = np.std(speed_samples)
-            print("average speed: ", average_speed, "RPM", "speed fluctuation: ", speed_fluctuation, "RPM")
+            print("Median speed: ", median_speed, "RPM", "speed fluctuation: ", speed_fluctuation, "RPM")
 
-            for accelerometer in [0]: # TODO: Notice we are only using the first accelerometer
+            for accelerometer in [1]: # TODO: Notice we are only using the first accelerometer
             # for accelerometer in [0, 1]:
                 sig = accelerometer_signals[:, accelerometer]  # Numbering is not necessarily correct
 
                 signals_at_oc.append({"signal": sig[start_id:end_id],  # Use only the cut out segment
-                                "rpm": average_speed,
+                                "rpm": median_speed,
                                 "oc":oc,
                                 "mode": self.datasets[dataset_dict_key]["mode"],
                                 "severity": self.datasets[dataset_dict_key]["severity"],
                                 "trail": self.datasets[dataset_dict_key]["trail"],
                                 "rpm_fluctuation": speed_fluctuation,
                                 "accelerometer_number": accelerometer,
-                                "expected_fault_frequency": n_events_per_rev * average_speed / 60,
+                                "expected_fault_frequency": n_events_per_rev * median_speed / 60,
                                 "snr": 0,
                                 })
         return signals_at_oc

@@ -122,7 +122,7 @@ def get_data_from_db_and_save_to_file(db_name):
     db_metadata = db["meta_data"].find_one({"_id": "meta_data"})
 
     freqs = np.fft.fftfreq(db_metadata["cut_signal_length"], d=1/db_metadata["sampling_frequency"])
-    freqs = freqs[1:db_metadata["cut_signal_length"] // 2] # Only use the positive frequencies and remove the DC component
+    freqs = freqs[1:db_metadata["cut_signal_length"] // 4] # Only use half of the the positive frequencies and remove the DC component
     peak_simulator = TriangularPeaks(freqs)
 
     severites = collection.distinct("severity")
@@ -150,9 +150,9 @@ def get_data_from_db_and_save_to_file(db_name):
                 elif data_type == "frequency":
                     cumulative_expected_fault_direction = np.zeros(len(ground_truth_fault_dir))
                     for mode,expected_fault_freq in faulty_test_data_expected_fault_freqs.items():
-                        expected_fault_direction = peak_simulator.get_expected_fault_behaviour(1,expected_fault_freq)
-                        meta_data.update({"expected_fault_direction_" + mode: list(expected_fault_direction)})
-                        cumulative_expected_fault_direction += expected_fault_direction
+                        expected_fault_direction_for_mode = peak_simulator.get_expected_fault_behaviour(1,expected_fault_freq)
+                        meta_data.update({"expected_fault_direction_" + mode: list(expected_fault_direction_for_mode)})
+                        cumulative_expected_fault_direction += expected_fault_direction_for_mode
                         meta_data.update({"expected_fault_direction": list(cumulative_expected_fault_direction)})
 
 
@@ -173,9 +173,8 @@ def get_data_from_db_and_save_to_file(db_name):
                                               metadata=meta_data
                                               )
 
-def main():
-    db_name = "cwr"
+def main(db_name):
     get_data_from_db_and_save_to_file(db_name)
 
 if __name__ == '__main__':
-    main()
+    main("cwr")

@@ -149,7 +149,6 @@ class CWR(object):
         return self.db
 
 
-
 print("Adding CWR data to db")
 CWR().add_all_to_db()
 

@@ -41,8 +41,8 @@ def get_frequency_features(sig, rpm, fs, faults_per_revolution_for_each_mode):
 
     fault_freqs_per_mode = {mode: faults_per_rev * rotation_rate for mode, faults_per_rev in faults_per_revolution_for_each_mode.items()}
 
-    # # Square signal to get envelope and remove dc component
-    # sig = np.array(sig)**2
+    # # Square signal to get rudimentary envelope and remove dc component
+    # sig = np.array(sig -np.mean(sig))**2
 
     # Get the envelope by filtering and then taking the hilbert transform
     b, a = scipy.signal.butter(4, [fs / 4, fs * (3 / 8)], fs=fs, btype="bandpass")
@@ -56,11 +56,9 @@ def get_frequency_features(sig, rpm, fs, faults_per_revolution_for_each_mode):
     fft = np.abs(fft) / len(fft)  # Use fft magnitude and Normalize the fft
     freqs = np.fft.fftfreq(len(sig), 1 / fs)
 
-    # Only use the one-sided spectrum and discard the dc component
-    fft = fft[:len(fft) // 2][1:]
-    freqs = freqs[:len(freqs) // 2][1:]
-
-    # fft = fft**2# Using squared spectrum
+    # Only use the one-sided spectrum and discard the dc component, further use only half of the positive frequencies (1/4 of the Nyquist frequency)
+    fft = fft[:len(fft) // 4][1:]
+    freqs = freqs[:len(freqs) // 4][1:]
 
     spectral_entropy = np.nan_to_num(scipy.stats.differential_entropy(fft + 0.00001))
 
