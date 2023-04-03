@@ -159,12 +159,11 @@ def get_data_from_db_and_save_to_file(db_name):
                     meta_data.update({"expected_fault_direction": list(np.ones(len(ground_truth_fault_dir)))}) # Assumption that all engineering features are equally important and are increasing with fault severity
                 elif data_type == "frequency":
                     cumulative_expected_fault_direction = np.zeros(len(ground_truth_fault_dir))
-                    # for mode,expected_fault_freq in faulty_test_data_expected_fault_freqs.items():
                     for mode, expected_fault_freq in faulty_test_data_expected_fault_freqs.items():
                         expected_fault_direction_for_mode = peak_simulator.get_expected_fault_behaviour(1,expected_fault_freq)
                         meta_data.update({"expected_fault_direction_" + mode: list(expected_fault_direction_for_mode)})
                         cumulative_expected_fault_direction += expected_fault_direction_for_mode
-                        meta_data.update({"expected_fault_direction": list(cumulative_expected_fault_direction)})
+                    meta_data.update({"expected_fault_direction": list(cumulative_expected_fault_direction)})
 
 
                 name = db_name + '_{}_oc{}_snr{}_sev{}'.format(data_type, oc, snr, sev)

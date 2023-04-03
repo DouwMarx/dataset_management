@@ -109,6 +109,7 @@ class CWR(object):
                      "rpm": int(rpm),
                      "expected_fault_frequency": float(
                          expected_fault_frequency) if expected_fault_frequency != None else None,
+                     "all_expected_fault_frequencies": {mode: self.get_expected_fault_frequency_for_mode(mode, rpm) for mode in ["inner","outer","ball"]},
                      "dataset_number": file_name_number,
                      "sampling_frequency": self.sampling_frequency  # Hz
                      }
@@ -149,14 +150,14 @@ class CWR(object):
         return self.db
 
 
-print("Adding CWR data to db")
-CWR().add_all_to_db()
-
-print("\n \n Creating noisy copies of the data")
-create_noisy_copies_of_dataset.main("cwr")
-
-print("\n \n Computing features")
-compute_features.main("cwr")
+# print("Adding CWR data to db")
+# CWR().add_all_to_db()
+#
+# print("\n \n Creating noisy copies of the data")
+# create_noisy_copies_of_dataset.main("cwr")
+#
+# print("\n \n Computing features")
+# compute_features.main("cwr")
 
 print("\n \n Writing datasets to file")
 get_data_from_db_and_save_to_file("cwr")
