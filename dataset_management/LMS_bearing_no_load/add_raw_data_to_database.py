@@ -189,6 +189,7 @@ class LMS(object):
                                 "rpm_fluctuation": speed_fluctuation,
                                 "accelerometer_number": accelerometer,
                                 "expected_fault_frequency": n_events_per_rev * median_speed / 60,
+                                "all_expected_fault_frequencies": {k: v * median_speed / 60 for k, v in  self.n_events_per_rev.items()},
                                 "snr": 0,
                                 })
         return signals_at_oc

@@ -35,7 +35,7 @@ def get_data_from_db(oc, sev, snr, db_name, filter_to_use):
 
     # Find the corresponding faulty data for each fault mode
     faulty_test_datasets = {}
-    faulty_test_data_expected_fault_freqs = {}
+    # faulty_test_data_expected_fault_freqs = {}
     all_modes = collection.distinct("mode", filter={"oc": oc, "severity": sev, "snr": snr})  # This includes healthy
     faulty_modes = [mode for mode in all_modes if mode != "healthy"]
     for fault_mode in faulty_modes:
@@ -49,24 +49,34 @@ def get_data_from_db(oc, sev, snr, db_name, filter_to_use):
             , filter_to_use)
         )
 
-        # Extract the expected fault frequency for a given fault mode at this operating condition
-        expected_fault_freq = collection.distinct("expected_fault_frequency", filter = {
-            "oc": oc,
-            "severity": sev,
-            "snr": snr,
-            "mode": fault_mode,
-            "expected_fault_frequency": {"$exists": True}}
-                                                  )
-        if len(expected_fault_freq) > 1:
-            raise ValueError("More than one expected fault frequency found in the database for operating condition oc: " + str(
-                oc) + " snr: " + str(snr) + " sev: " + str(sev))
-        faulty_test_data_expected_fault_freqs[fault_mode] = expected_fault_freq[0]
+        # # Extract the expected fault frequency for a given fault mode at this operating condition
+        # expected_fault_freq = collection.distinct("expected_fault_frequency", filter = {
+        #     "oc": oc,
+        #     "severity": sev,
+        #     "snr": snr,
+        #     "mode": fault_mode,
+        #     "expected_fault_frequency": {"$exists": True}}
+        #                                           )
+        # if len(expected_fault_freq) > 1:
+        #     raise ValueError("More than one expected fault frequency found in the database for operating condition oc: " + str(
+        #         oc) + " snr: " + str(snr) + " sev: " + str(sev))
+        # faulty_test_data_expected_fault_freqs[fault_mode] = expected_fault_freq[0]
 
         # If there is no data for either mode then skip this operating condition
         if sum([len(val) for key,val in faulty_test_datasets.items()]) == 0:
             print("No faulty data for any fault mode found in the database for operating condition oc: " + str(
                 oc) + " snr: " + str(snr) + " sev: " + str(sev))
             return None, None,None
+
+    faulty_test_data_expected_fault_freqs = collection.find_one(
+        {"oc": oc,
+                                                                 "severity": sev,
+    "snr": snr,
+    "mode":  {"$ne": "healthy"},
+    "all_expected_fault_frequencies": {"$exists": True}}
+                                                                )["all_expected_fault_frequencies"]
+
+
 
     # Frequency domain data are multidimensional and needs to be treated differently
     if "fft" in filter_to_use.keys():
@@ -82,7 +92,7 @@ def get_data_from_db(oc, sev, snr, db_name, filter_to_use):
 
 
 def get_data_from_db_and_save_to_file(db_name):
-    # Pull the data from the database
+    # Pull engineering features and frequency features from the database and save them to the standard file structure
 
     engineering_features_to_use = [
         'rms',
@@ -146,10 +156,11 @@ def get_data_from_db_and_save_to_file(db_name):
                                                    ignore_index=True).mean() - healthy.mean()
 
                 if data_type == "engineering":
-                    meta_data.update({"expected_fault_direction": list(np.ones(len(ground_truth_fault_dir)))})
+                    meta_data.update({"expected_fault_direction": list(np.ones(len(ground_truth_fault_dir)))}) # Assumption that all engineering features are equally important and are increasing with fault severity
                 elif data_type == "frequency":
                     cumulative_expected_fault_direction = np.zeros(len(ground_truth_fault_dir))
-                    for mode,expected_fault_freq in faulty_test_data_expected_fault_freqs.items():
+                    # for mode,expected_fault_freq in faulty_test_data_expected_fault_freqs.items():
+                    for mode, expected_fault_freq in faulty_test_data_expected_fault_freqs.items():
                         expected_fault_direction_for_mode = peak_simulator.get_expected_fault_behaviour(1,expected_fault_freq)
                         meta_data.update({"expected_fault_direction_" + mode: list(expected_fault_direction_for_mode)})
                         cumulative_expected_fault_direction += expected_fault_direction_for_mode
