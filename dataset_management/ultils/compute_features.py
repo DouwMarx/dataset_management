@@ -39,7 +39,6 @@ def get_skewness(sig):
 def get_frequency_features(sig, rpm, fs, faults_per_revolution_for_each_mode):
     rotation_rate = rpm / 60
 
-    fault_freqs_per_mode = {mode: faults_per_rev * rotation_rate for mode, faults_per_rev in faults_per_revolution_for_each_mode.items()}
 
     # # Square signal to get rudimentary envelope and remove dc component
     # sig = np.array(sig -np.mean(sig))**2
@@ -65,6 +64,7 @@ def get_frequency_features(sig, rpm, fs, faults_per_revolution_for_each_mode):
     frequency_features = {"fft": list(fft),
                           "spectral_entropy": spectral_entropy}  # Store the fft for later use
 
+    fault_freqs_per_mode = {mode: faults_per_rev * rotation_rate for mode, faults_per_rev in faults_per_revolution_for_each_mode.items() if mode != "healthy"}
     # Find the index of the frequency that is closest to the respective fault frequencies
     for mode, expected_freq in fault_freqs_per_mode.items():
         if expected_freq > fs / 2:

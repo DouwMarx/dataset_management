@@ -14,18 +14,24 @@ Some fault seeded experiments have very clear fault signatures for certain tests
 # See below for snr definition
 # https://stackoverflow.com/questions/14058340/adding-noise-to-a-signal-in-python
 def get_median_variance(dataset_name):
-    # Compute the average variance of all the time series in the database
+    # Compute the average variance of all the time series in the database to use as a reference for the noise level
     db,client = make_db(dataset_name)
     variances = []
+
     for doc in tqdm(db["raw"].find({"snr":0})):
         centered = doc["time_series"] - np.mean(doc["time_series"])
         variances.append(np.var(centered))
+
+    # Check if there were any docs in the db
+    if len(variances) == 0:
+        raise ValueError("No documents found in the database")
+
     client.close()
     median_variance = np.median(variances)
     print("Median variance: {}".format(median_variance))
     return median_variance
 
-def process(db_name,doc, snr_levels=None,median_variance=0.08582927368282073): # TODO: Automate median variance computation
+def process(db_name,doc,median_variance, snr_levels=None): # TODO: Automate median variance computation
     if snr_levels is None:
         snr_levels = np.logspace(-2, 0, 3)
 
@@ -54,17 +60,17 @@ def add_noisy_copies_of_dataset(dataset_name,snr_levels=None,parallel=True):
     db["raw"].delete_many({"snr": {"$ne": 0}})
 
     # We compute the median variance of all the time series in the database
-    median_variance = get_median_variance(dataset_name)  # about 0.085, hard coded into process function keyword argument
+    median_variance = get_median_variance(dataset_name)
     print("Median variance for {} is : {}".format(dataset_name,median_variance))
 
     # Run the process function on all the documents in the database
 
 
     if parallel:
-        Parallel(n_jobs=10)(delayed(process)( dataset_name,doc,snr_levels,median_variance) for doc in tqdm(list(db["raw"].find({"snr":0}))))
+        Parallel(n_jobs=10)(delayed(process)( dataset_name, doc, median_variance, snr_levels) for doc in tqdm(list(db["raw"].find({"snr":0}))))
     else:
         for doc in list(db["raw"].find({"snr":0})):
-            process(dataset_name, doc = doc,snr_levels=snr_levels,median_variance=median_variance)
+            process(dataset_name,doc,median_variance, snr_levels=snr_levels,)
 
 def main(db_name):
     add_noisy_copies_of_dataset(db_name,snr_levels=np.logspace(-2, 0, 3),parallel=True)
