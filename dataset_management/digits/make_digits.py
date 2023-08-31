@@ -49,10 +49,10 @@ for health_key, health_value in data_dict.copy().items():
                                                     'dataset_name': name}
                                           )
 
-plt.figure(health_key)
-example = healthy.iloc[0].values.reshape(8, 8)
-plt.imshow(example)
-
-plt.figure(health_key + "->" + fault_key)
-example = ground_truth_fault_direction.reshape(8, 8)
-plt.imshow(example)
+# plt.figure(health_key)
+# example = healthy.iloc[0].values.reshape(8, 8)
+# plt.imshow(example)
+#
+# plt.figure(health_key + "->" + fault_key)
+# example = ground_truth_fault_direction.reshape(8, 8)
+# plt.imshow(example)

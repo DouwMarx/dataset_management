@@ -49,19 +49,6 @@ def get_data_from_db(oc, sev, snr, db_name, filter_to_use):
             , filter_to_use)
         )
 
-        # # Extract the expected fault frequency for a given fault mode at this operating condition
-        # expected_fault_freq = collection.distinct("expected_fault_frequency", filter = {
-        #     "oc": oc,
-        #     "severity": sev,
-        #     "snr": snr,
-        #     "mode": fault_mode,
-        #     "expected_fault_frequency": {"$exists": True}}
-        #                                           )
-        # if len(expected_fault_freq) > 1:
-        #     raise ValueError("More than one expected fault frequency found in the database for operating condition oc: " + str(
-        #         oc) + " snr: " + str(snr) + " sev: " + str(sev))
-        # faulty_test_data_expected_fault_freqs[fault_mode] = expected_fault_freq[0]
-
         # If there is no data for either mode then skip this operating condition
         if sum([len(val) for key,val in faulty_test_datasets.items()]) == 0:
             print("No faulty data for any fault mode found in the database for operating condition oc: " + str(
@@ -78,11 +65,15 @@ def get_data_from_db(oc, sev, snr, db_name, filter_to_use):
 
 
 
-    # Frequency domain data are multidimensional and needs to be treated differently
+    # Frequency domain data and time series data are multidimensional and needs to be treated differently
     if "fft" in filter_to_use.keys():
         healthy_data = pd.DataFrame([d["fft"] for d in healthy_data])
         for key, faulty_test_data in faulty_test_datasets.items():
             faulty_test_datasets[key] = pd.DataFrame([d["fft"] for d in faulty_test_data])
+    elif "time_series" in filter_to_use.keys():
+                healthy_data = pd.DataFrame([d["time_series"] for d in healthy_data])
+                for key, faulty_test_data in faulty_test_datasets.items():
+                    faulty_test_datasets[key] = pd.DataFrame([d["time_series"] for d in faulty_test_data])
     else:
         healthy_data = pd.DataFrame(healthy_data)
         for key, faulty_test_data in faulty_test_datasets.items():
@@ -102,17 +93,17 @@ def get_data_from_db_and_save_to_file(db_name):
         # 'skewness',
         'ball_h1',
         'ball_h2',
-        # 'ball_h3',
+        'ball_h3',
         'ball_h4',
         # 'ball_h5',
         'outer_h1',
         'outer_h2',
-        # 'outer_h3',
+        'outer_h3',
         'outer_h4',
         # 'outer_h5',
         'inner_h1',
         'inner_h2',
-        # 'inner_h3',
+        'inner_h3',
         'inner_h4',
         # 'inner_h5',
         'entropy',
@@ -123,8 +114,9 @@ def get_data_from_db_and_save_to_file(db_name):
                           engineering_features_to_use}  # The filter that will extract only the relevant fields from the database
     engineering_filter.update({"_id": 0})  # Don't extract the id field
 
-    # Create the filter that will extract the frequency feature fields from the database
+    # Create the filters that will extract frequency fields and  time series respectively from the database
     fft_filter = {"fft": 1, "_id": 0}
+    time_series_filter = {"time_series": 1, "_id": 0}
 
     client = MongoClient()
     db = client[db_name]
@@ -140,7 +132,7 @@ def get_data_from_db_and_save_to_file(db_name):
     prod = product(collection.distinct("oc"), severity_excluding_healthy, collection.distinct("snr"))
     for oc, sev, snr in prod:
         # Get the healthy data
-        for filter_to_use, data_type in zip([engineering_filter, fft_filter], ["engineering", "frequency"]):
+        for filter_to_use, data_type in zip([engineering_filter, fft_filter,time_series_filter], ["engineering", "frequency","time_series"]):
             healthy, faulty_data_dict,faulty_test_data_expected_fault_freqs = get_data_from_db(oc, sev, snr, db_name, filter_to_use)
 
             if healthy is not None:
@@ -171,6 +163,7 @@ def get_data_from_db_and_save_to_file(db_name):
                     'ground_truth_fault_direction': list(ground_truth_fault_dir),
                     'dataset_name': name,
                     "snr": snr,
+                    "severity": sev,
                 })
 
                 meta_data.update(db_metadata)
@@ -182,6 +175,10 @@ def get_data_from_db_and_save_to_file(db_name):
                                                   "/home/douwm/projects/PhD/code/biased_anomaly_detection/data"),
                                               metadata=meta_data
                                               )
+
+                # Also export the time domain data directly to the file structure
+
+
 
 def main(db_name):
     get_data_from_db_and_save_to_file(db_name)

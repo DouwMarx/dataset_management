@@ -2,7 +2,7 @@ import numpy as np
 from database_definitions import make_db
 from dataset_management.ultils import processing, create_noisy_copies_of_dataset, compute_features
 from dataset_management.ultils.pul_data_from_db import get_data_from_db_and_save_to_file
-from dataset_management.ultils.time_frequency import get_signal_length_for_number_of_events
+from dataset_management.ultils.time_frequency import get_required_signal_length_for_required_number_of_events
 from tqdm import tqdm
 from scipy.io import loadmat
 from file_definitions import lms_path
@@ -124,11 +124,11 @@ class LMS(object):
 
         # Get the length for the slowest speed, the slowest fault frequency to have 10 fault events
         # min_rpm = 610
-        mean_rpm = 1500
+        mean_rpm = 1800
         min_events_per_rev = 2.196  # Ball fault frequency
         min_events = 8
-        self.cut_signal_length = get_signal_length_for_number_of_events(mean_rpm, min_events_per_rev,
-                                                                        self.sampling_frequency, min_events)
+        self.cut_signal_length = get_required_signal_length_for_required_number_of_events(mean_rpm, min_events_per_rev,
+                                                                                          self.sampling_frequency, min_events)
         print("Cut signal length: {}".format(self.cut_signal_length))
 
         self.db, self.client = make_db("lms")
@@ -143,7 +143,7 @@ class LMS(object):
             "ball": 2.196,
             "inner": 7.276,
             "outer": 4.724,
-            "healthy": 0
+            "healthy": None
         }
 
         # Add a document to the db with _id meta_data to store the meta data
@@ -167,7 +167,7 @@ class LMS(object):
         n_events_per_rev = self.n_events_per_rev[self.datasets[dataset_dict_key]["mode"]]
 
         signals_at_oc = []
-        for oc, samples in enumerate(segments_to_extract):
+        for oc, samples in enumerate(segments_to_extract[1:]): # Do not use the first segment at the lowest speed
             start_id = int(samples[0] * 1e6)
             end_id = int(samples[1] * 1e6)
 
@@ -188,8 +188,8 @@ class LMS(object):
                                 "trail": self.datasets[dataset_dict_key]["trail"],
                                 "rpm_fluctuation": speed_fluctuation,
                                 "accelerometer_number": accelerometer,
-                                "expected_fault_frequency": n_events_per_rev * median_speed / 60,
-                                "all_expected_fault_frequencies": {k: v * median_speed / 60 for k, v in  self.n_events_per_rev.items()},
+                                "expected_fault_frequency": n_events_per_rev * median_speed / 60 if n_events_per_rev is not None else None,
+                                "all_expected_fault_frequencies": {k: v * median_speed / 60 for k, v in  self.n_events_per_rev.items() if v is not None},
                                 "snr": 0,
                                 })
         return signals_at_oc

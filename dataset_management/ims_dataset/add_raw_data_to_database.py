@@ -192,19 +192,6 @@ class IMSTest(object):
 
 def main(db_to_act_on):
     from dataset_management.ims_dataset.experiment_meta_data import channel_info
-    # db, client = make_db(db_to_act_on)
-
-    # for name in db.collection_names():
-    #     db.drop_collection(name)
-    #
-    # db, client = make_db(db_to_act_on)
-    # # First clear out the database
-    # db["raw"].delete_many({})
-    # print("Dumped existing data")
-
-    # for name in db.collection_names():
-    #     db.drop_collection(name)
-
 
     if "rapid" in db_to_act_on:
         rapid_level = "0"#db_to_act_on[-1] # Take the rapid number from the db name 0 is very rapid, 1 is mildly rapid

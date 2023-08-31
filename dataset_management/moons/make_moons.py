@@ -26,6 +26,12 @@ export_data_to_file_structure(dataset_name=name,
                                 healthy_data=healthy,
                                 faulty_data_dict=faulty_data_dict,
                                 export_path=pathlib.Path("/home/douwm/projects/PhD/code/biased_anomaly_detection/data"),
-                                metadata={'ground_truth_fault_direction': list(ground_truth_fault_direction),
-                                            'dataset_name': name}
+                                metadata={
+                                    'ground_truth_fault_direction': list(ground_truth_fault_direction),
+                                    'expected_fault_direction': list(ground_truth_fault_direction),
+                                    'dataset_name': name,
+                                    "snr": 0,
+                                    "cut_signal_length": 3,
+                                    "sampling_frequency": 3,
+                                }
                                 )
