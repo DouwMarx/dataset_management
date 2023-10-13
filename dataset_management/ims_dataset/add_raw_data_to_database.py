@@ -1,4 +1,5 @@
 import itertools
+import pathlib
 import pickle
 import random
 from datetime import datetime
@@ -7,6 +8,7 @@ import numpy as np
 import pandas as pd
 from joblib import Parallel, delayed
 from database_definitions import make_db
+from dataset_management.ultils.write_data_in_standard_format import export_data_to_file_structure
 from file_definitions import ims_path
 from pypm.phenomenological_bearing_model.bearing_model import Bearing
 from multiprocessing import Pool
@@ -183,7 +185,45 @@ class IMSTest(object):
             print("Applying test train split on " +db_name)
             test_train_split(db_name)
 
+    def write_to_file(self, target_location):
 
+        process = self.create_document_per_channel
+
+        # measurement_paths = np.random.choice(self.measurement_paths, size=20, replace=False)
+        measurement_paths = self.measurement_paths
+
+        # Serial
+        # results = [process(path) for path in tqdm(measurement_paths)]
+
+        # Parallel
+        results = Parallel(n_jobs=14)(delayed(process)(path) for path in tqdm(measurement_paths))
+
+
+        for channel in self.channel_names:
+            fault_mode_for_channel =  self.channel_info[self.channel_names.index(channel)]["mode"]
+
+            samples_for_channel = [res_dict[channel] for res_dict in results]
+            channel_df = pd.DataFrame(samples_for_channel)
+
+            healthy_df = channel_df[channel_df["severity"] == 0]
+            faulty_df = channel_df[channel_df["severity"] > 5] # Severely damaged data
+
+            # Extract the time signals are objects in the dataframe
+            healthy_time_signals = np.vstack(healthy_df["time_series"].values)
+            faulty_time_signals = np.vstack(faulty_df["time_series"].values)
+
+            healthy_time_signals = pd.DataFrame(healthy_time_signals)
+            faulty_time_signals = { str(fault_mode_for_channel) : pd.DataFrame(faulty_time_signals)}
+
+            # Get the
+
+            export_data_to_file_structure(dataset_name= "ims" + "_test"+ self.folder_name[0]+ "_" + channel,
+                                          healthy_data=healthy_time_signals,
+                                          faulty_data_dict=  faulty_time_signals,
+                                          export_path= pathlib.Path(
+                                              "/home/douwm/projects/PhD/code/biased_anomaly_detection/data"),
+                                          metadata= self.ims_meta_data
+                                          )
 
     def serial(self):
         return [self.create_document_per_channel(path) for path in tqdm(self.measurement_paths[0:100])]
@@ -204,8 +244,8 @@ def main(db_to_act_on):
 
     folders_for_different_tests = ["1st_test", "2nd_test", "3rd_test/txt"]  # Each folder has text files with the data
 
-    for folder, channel_info in zip(folders_for_different_tests, channel_info):
-        test_obj = IMSTest(folder, channel_info, rapid_level = rapid_level)
+    for folder, folder_channel_info in zip(folders_for_different_tests, channel_info):
+        test_obj = IMSTest(folder, folder_channel_info, rapid_level = rapid_level)
         test_obj.add_to_db(db_to_act_on)
         print("Done with one folder")
     return "nothing"
@@ -214,4 +254,11 @@ def main(db_to_act_on):
 if __name__ == "__main__":
     # main("ims")
     # main("ims_rapid1")
-    main("ims")
+    # main("ims")
+
+    folders_for_different_tests = ["1st_test", "2nd_test", "3rd_test/txt"]  # Each folder has text files with the data
+
+    from dataset_management.ims_dataset.experiment_meta_data import channel_info
+    for folder, folder_channel_info in zip(folders_for_different_tests, channel_info):
+        test_obj = IMSTest(folder, folder_channel_info)
+        test_obj.write_to_file("ims")

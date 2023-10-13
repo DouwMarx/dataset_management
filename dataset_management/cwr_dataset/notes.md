@@ -47,3 +47,15 @@ This corresponds to at least
 
 
 The shaft frequency is around 1772/60 = 29.533333333333335 Hz
+
+
+One thing that is very confusing is that there is a separate mat file for each channel mode operating condition etc. for the faulty data.
+However, for the healthy, reference data, there is a single mat file with the same channel and having keys for different runs.
+
+Dataset does not lend iself to be used as multi channel data, because sometimes data is present and other times it is not, the same is true for reference vs. not. 
+
+Deviation from data standard:
+Although some of the channels are sampled simultaneously, the data is still stored with channel dimension 1 (batch,1,sequence).
+This is since all channels were not always measured and all measurement are accelerometer signals
+
+A min and max speed measuremnt is available inside each of the mat files.

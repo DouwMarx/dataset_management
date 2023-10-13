@@ -1,4 +1,4 @@
-Fault width [mm],Motor load [hp],Shaft speed [rpm],inner,ball,outer centre,outer orthogonal,outer opposite,healthy
+Fault width [mm],Motor load [hp],Shaft speed [rpm],Inner Race Fault,Ball Fault,Outer Race Fault: Centre,Outer Race Fault: Orthogonal,Outer Race: Opposite ,Reference
 0.18,0,1797,105,118,130,144,156,0
 0.18,1,1772,106,119,131,145,158,0
 0.18,2,1750,107,120,132,146,159,0

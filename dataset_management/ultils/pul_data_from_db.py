@@ -27,7 +27,7 @@ def get_data_from_db(oc, sev, snr, db_name, filter_to_use):
         filter_to_use)
     )
     if len(healthy_data) == 0:  # Skip if there is no data
-        print("No healthy engineering feature data found in the database for operating condition oc: " + str(
+        print("No healthy data found in the database for operating condition oc: " + str(
             oc) + " snr: " + str(snr) + " sev: " + str(sev))
         return None, None,None
     else:
@@ -35,7 +35,6 @@ def get_data_from_db(oc, sev, snr, db_name, filter_to_use):
 
     # Find the corresponding faulty data for each fault mode
     faulty_test_datasets = {}
-    # faulty_test_data_expected_fault_freqs = {}
     all_modes = collection.distinct("mode", filter={"oc": oc, "severity": sev, "snr": snr})  # This includes healthy
     faulty_modes = [mode for mode in all_modes if mode != "healthy"]
     for fault_mode in faulty_modes:
@@ -48,8 +47,7 @@ def get_data_from_db(oc, sev, snr, db_name, filter_to_use):
              }
             , filter_to_use)
         )
-
-        # If there is no data for either mode then skip this operating condition
+        # If there is no data for any mode then skip this operating condition
         if sum([len(val) for key,val in faulty_test_datasets.items()]) == 0:
             print("No faulty data for any fault mode found in the database for operating condition oc: " + str(
                 oc) + " snr: " + str(snr) + " sev: " + str(sev))
@@ -57,13 +55,10 @@ def get_data_from_db(oc, sev, snr, db_name, filter_to_use):
 
     faulty_test_data_expected_fault_freqs = collection.find_one(
         {"oc": oc,
-                                                                 "severity": sev,
-    "snr": snr,
-    "mode":  {"$ne": "healthy"},
-    "all_expected_fault_frequencies": {"$exists": True}}
-                                                                )["all_expected_fault_frequencies"]
-
-
+        "severity": sev,
+         "snr": snr,
+         "mode":  {"$ne": "healthy"},
+         "all_expected_fault_frequencies": {"$exists": True}})["all_expected_fault_frequencies"]
 
     # Frequency domain data and time series data are multidimensional and needs to be treated differently
     if "fft" in filter_to_use.keys():
@@ -132,7 +127,8 @@ def get_data_from_db_and_save_to_file(db_name):
     prod = product(collection.distinct("oc"), severity_excluding_healthy, collection.distinct("snr"))
     for oc, sev, snr in prod:
         # Get the healthy data
-        for filter_to_use, data_type in zip([engineering_filter, fft_filter,time_series_filter], ["engineering", "frequency","time_series"]):
+        # for filter_to_use, data_type in zip([engineering_filter, fft_filter,time_series_filter], ["engineering", "frequency","time_series"]):
+        for filter_to_use, data_type in zip([time_series_filter],["time_series"]):
             healthy, faulty_data_dict,faulty_test_data_expected_fault_freqs = get_data_from_db(oc, sev, snr, db_name, filter_to_use)
 
             if healthy is not None:

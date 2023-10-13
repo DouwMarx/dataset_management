@@ -12,7 +12,7 @@ normal_url = "https://engineering.case.edu/bearingdatacenter/normal-baseline-dat
 
 
 def get_all_mat_data_from_cwr_page(page_url):
-    download_path = "/home/douwm/data/CWR/drive_end_12k"
+    download_path = "/home/douwm/data/CWR/drive_end_12k"  # TODO: Notice it is saved in the same directory
 
     # Create the download path directory if it does not exist
     if not os.path.exists(download_path):
