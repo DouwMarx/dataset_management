@@ -1,4 +1,4 @@
-Sampling Rate [kHz],Fault Location,Fault width [mm],Motor load [hp],Shaft speed [rpm],Inner Race Fault,Ball Fault,Outer Race Fault: Centre,Outer Race Fault: Orthogonal,Outer Race: Opposite ,Reference
+Sampling Rate [kHz],Fault Location,Fault Width [mm],Motor load [hp],Shaft speed [rpm],Inner Race Fault,Ball Fault,Outer Race Fault: Centre,Outer Race Fault: Orthogonal,Outer Race: Opposite ,Reference
 12,DE,0.18,0,1797,105,118,130,144,156,
 12,DE,0.18,1,1772,106,119,131,145,158,
 12,DE,0.18,2,1750,107,120,132,146,159,
@@ -26,7 +26,7 @@ Sampling Rate [kHz],Fault Location,Fault width [mm],Motor load [hp],Shaft speed 
 48,DE,0.53,0,1797,213,226,238,250,262,
 48,DE,0.53,1,1772,214,227,239,251,263,
 48,DE,0.53,2,1750,215,228,240,252,264,
-48,DE,0.53,3,1730,216,229,241,253,265,
+48,DE,0.53,3,1730,217,229,241,253,265,
 12,FE,0.18,0,1797,278,282,294,298,302,
 12,FE,0.18,1,1772,279,283,295,299,305,
 12,FE,0.18,2,1750,280,284,296,300,306,

@@ -213,7 +213,9 @@ class IMSTest(object):
             faulty_time_signals = np.vstack(faulty_df["time_series"].values)
 
             healthy_time_signals = pd.DataFrame(healthy_time_signals)
-            faulty_time_signals = { str(fault_mode_for_channel) : pd.DataFrame(faulty_time_signals)}
+            # faulty_time_signals = { str(fault_mode_for_channel) : pd.DataFrame(faulty_time_signals)}
+            # Make sure there is a channel dimension such that (batch, channel, time)
+            faulty_time_signals = {str(fault_mode_for_channel): np.expand_dims(faulty_time_signals, axis=1)}
 
             # Get the
 

@@ -88,8 +88,11 @@ class CZT(object):
             fig.write_html(str(self.czt_path.joinpath(name + ".html")))
 
 
-        # Make every array a pd.DataFrame
-        data_for_each_class = {key: pd.DataFrame(value) for key, value in data_for_each_class.items()}
+        # # Make every array a pd.DataFrame
+        # data_for_each_class = {key: pd.DataFrame(value) for key, value in data_for_each_class.items()}
+
+        # Make every array have a channel dimension (batch, channel, time)
+        data_for_each_class = {key: np.expand_dims(value, axis=1) for key, value in data_for_each_class.items()}
 
         return data_for_each_class
 
