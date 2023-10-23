@@ -7,6 +7,6 @@ models_dir = root_dir.joinpath('models') # Data dir
 # plots_dir = reports_dir.joinpath('plots') # Data dir
 
 
-ims_path = Path("/home/douwm/data/IMS")
+ims_path = Path("/home/douwm/data/ims")
 lms_path = Path("/home/douwm/data/LMS")
 cwr_path = Path("/home/douwm/data/CWR")

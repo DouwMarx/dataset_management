@@ -3,18 +3,13 @@ import pathlib
 import pickle
 import random
 from datetime import datetime
-
 import numpy as np
 import pandas as pd
 from joblib import Parallel, delayed
-from database_definitions import make_db
 from dataset_management.ultils.write_data_in_standard_format import export_data_to_file_structure
 from file_definitions import ims_path
 from pypm.phenomenological_bearing_model.bearing_model import Bearing
-from multiprocessing import Pool
 from tqdm import tqdm
-from time import time
-from dataset_management.ultils.mongo_test_train_split import test_train_split
 
 
 class IMSTest(object):
@@ -22,8 +17,8 @@ class IMSTest(object):
     Used to add the IMS data to mongodb
     """
 
-    def __init__(self, path_to_measuremet_campaign : pathlib.Path, channel_info, rapid_level = None):
-        self.folder_name = path_to_measuremet_campaign.name # The folder where the text files are stored
+    def __init__(self, path_to_measurement_campaign : pathlib.Path, channel_info, rapid_level = None):
+        self.folder_name = path_to_measurement_campaign.name # The folder where the text files are stored
 
         self.channel_info = channel_info  # Info defined for the channel
         self.channel_names = [channel_dict["measurement_name"] for channel_dict in self.channel_info]  # Extract the names of the channels
@@ -31,7 +26,7 @@ class IMSTest(object):
 
         self.rapid_level = rapid_level # Reduce size for prototyping purposes
 
-        self.measurement_paths = list(ims_path.joinpath(self.folder_name).iterdir())
+        self.measurement_paths = list(path_to_measurement_campaign.iterdir())
 
         # Make sure the record numbers follow the correct time stamps for different samples.
         self.time_stamps = sorted(
@@ -109,6 +104,7 @@ class IMSTest(object):
                "severity": sev_index,
                "meta_data": self.ims_meta_data,
                "time_series": list(time_series_data),
+               "file_path": file_path.as_posix(),  # Convert to string for mongodb to be able to store it
                "time_stamp": time_stamp,
                "record_number": int(record_number),
                "augmented": False,
@@ -117,75 +113,10 @@ class IMSTest(object):
                }
         return doc
 
-    def add_to_db(self, target_db_root):
+    def write_to_file(self, target_location = None):
 
-        # Add chucks of documents to the db per time to keep memory manageable
-
-        process = self.create_document_per_channel
-
-        # n_per_run = 280
-        # for i in tqdm(range(0, len(self.measurement_paths) + n_per_run, n_per_run)):
-        #     result = Parallel(n_jobs=14)(
-        #         delayed(process)(i) for i in self.measurement_paths[i:i + n_per_run])
-        #     # flattened = itertools.chain.from_iterable(docs)
-        #     result = [item for sublist in result for item in sublist]
-        #
-        #     db, client = make_db("ims")
-        #     db["raw"].insert_many(result)
-        #     client.close()
-
-        if self.rapid_level == "0":
-            n_per_batch = 2
-            batch_ids = range(0, self.n_records, n_per_batch)
-            random.seed(12)
-            batch_ids = random.sample(batch_ids,5)
-
-        elif self.rapid_level == "1":
-            n_per_batch = 100
-            batch_ids = range(0, self.n_records, n_per_batch)
-            random.seed(12)
-            batch_ids = random.sample(batch_ids, int(len(batch_ids)/4))
-
-        elif self.rapid_level == "2":
-            n_per_batch = 100
-            batch_ids = range(0, self.n_records, n_per_batch)
-            random.seed(12)
-            batch_ids = random.sample(batch_ids, int(len(batch_ids) / 2))
-
-            # healthy_start = self.channel_info[0]["healthy_records"][0]
-            # healthy_end= self.channel_info[0]["healthy_records"][1]
-            # batch_ids = [healthy_start - int(n_per_batch/2),healthy_end - int(n_per_batch/2), self.n_records - int(n_per_batch/2)]
-        else:
-            n_per_batch = 100
-            batch_ids = range(0, self.n_records, n_per_batch)
-
-        # TODO: Add the test functionality here to make it around the healhty damage treshold
-
-        # This ensures that all data is first dropped for a certain dataset (channel) before adding data.
-        for channel in self.channel_names:
-            db_name = target_db_root+ "_test"+ self.folder_name[0]+ "_" + channel
-            db, client = make_db(db_name)
-            for name in db.collection_names():
-                db.drop_collection(name)
-                print("Dumped data for dataset {}, collection {}".format(db_name,name))
-
-        for batch_start in tqdm(batch_ids):
-            batch_result = [process(sample_name) for sample_name in
-                            self.measurement_paths[batch_start:batch_start + n_per_batch]]
-            # batch_result = list(itertools.chain(*batch_result))
-            for channel in batch_result[0].keys():
-                docs = [res_dict[channel] for res_dict in batch_result]
-                db, client = make_db(target_db_root+ "_test"+ self.folder_name[0]+ "_" + channel)
-                db["raw"].insert_many(docs)
-                client.close()
-
-        # This splits the data into train and test sets. It is done here since separate datasets are created for the same test
-        for channel in self.channel_names:
-            db_name = target_db_root+ "_test"+ self.folder_name[0]+ "_" + channel
-            print("Applying test train split on " +db_name)
-            test_train_split(db_name)
-
-    def write_to_file(self, target_location):
+        if target_location is None:
+           target_location = pathlib.Path("/home/douwm/projects/PhD/code/biased_anomaly_detection/data")
 
         process = self.create_document_per_channel
 
@@ -197,7 +128,6 @@ class IMSTest(object):
 
         # Parallel
         results = Parallel(n_jobs=14)(delayed(process)(path) for path in tqdm(measurement_paths))
-
 
         for channel in self.channel_names:
             fault_mode_for_channel =  self.channel_info[self.channel_names.index(channel)]["mode"]
@@ -213,7 +143,6 @@ class IMSTest(object):
             faulty_time_signals = np.vstack(faulty_df["time_series"].values)
 
             healthy_time_signals = pd.DataFrame(healthy_time_signals)
-            # faulty_time_signals = { str(fault_mode_for_channel) : pd.DataFrame(faulty_time_signals)}
             # Make sure there is a channel dimension such that (batch, channel, time)
             faulty_time_signals = {str(fault_mode_for_channel): np.expand_dims(faulty_time_signals, axis=1)}
 
@@ -222,8 +151,7 @@ class IMSTest(object):
             export_data_to_file_structure(dataset_name= "ims" + "_test"+ self.folder_name[0]+ "_" + channel,
                                           healthy_data=healthy_time_signals,
                                           faulty_data_dict=  faulty_time_signals,
-                                          export_path= pathlib.Path(
-                                              "/home/douwm/projects/PhD/code/biased_anomaly_detection/data"),
+                                          export_path= target_location,
                                           metadata= self.ims_meta_data
                                           )
 
@@ -232,36 +160,12 @@ class IMSTest(object):
 
 
 
-def main(db_to_act_on):
-    from dataset_management.ims_dataset.experiment_meta_data import channel_info
-
-    if "rapid" in db_to_act_on:
-        rapid_level = "0"#db_to_act_on[-1] # Take the rapid number from the db name 0 is very rapid, 1 is mildly rapid
-
-        db_to_act_on = "ims_rapid" + rapid_level # Notice that db to act on is rewritten here because the dataset is split automatically by the raw procesing
-        print("running rapid")
-    else:
-        db_to_act_on = "ims" # Notice that db to act on is rewritten here because the dataset is split automatically by the raw procesing
-        rapid_level = None
-
-    folders_for_different_tests = ["1st_test", "2nd_test", "3rd_test/txt"]  # Each folder has text files with the data
-
-    for folder, folder_channel_info in zip(folders_for_different_tests, channel_info):
-        test_obj = IMSTest(folder, folder_channel_info, rapid_level = rapid_level)
-        test_obj.add_to_db(db_to_act_on)
-        print("Done with one folder")
-    return "nothing"
-
-
 if __name__ == "__main__":
-    # main("ims")
-    # main("ims_rapid1")
-    # main("ims")
 
-    folders_for_different_tests = ["1st_test", "2nd_test", "3rd_test/txt"]  # Each folder has text files with the data
+    from dataset_management.ims_dataset.experiment_meta_data import channel_info,test_folder_names
 
-    from dataset_management.ims_dataset.experiment_meta_data import channel_info
-
-    for folder, folder_channel_info in zip(folders_for_different_tests, channel_info):
-        test_obj = IMSTest(folder, folder_channel_info)
+    for key, folder in test_folder_names.items():
+        folder_channel_info = channel_info[key]
+        path_to_folder = ims_path.joinpath(folder)
+        test_obj = IMSTest(path_to_folder, folder_channel_info)
         test_obj.write_to_file("ims")
