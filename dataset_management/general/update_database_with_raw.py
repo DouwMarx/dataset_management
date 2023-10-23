@@ -1,6 +1,6 @@
 from database_definitions import make_db
 from dataset_management.phenomenological_model.add_raw_data_to_database import main as pm_main
-from dataset_management.ims_dataset.add_raw_data_to_database import main as ims_main
+from dataset_management.ims_dataset.write_data_to_standard_structure import main as ims_main
 from dataset_management.ultils.mongo_test_train_split import test_train_split
 
 def ims_raw(db_to_act_on):

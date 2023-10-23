@@ -22,14 +22,14 @@ class IMSTest(object):
     Used to add the IMS data to mongodb
     """
 
-    def __init__(self, folder_name, channel_info, rapid_level = None):
-        self.folder_name = folder_name  # The folder where the text files are stored
-        self.channel_info = channel_info  # Info defined for the channel
-        self.channel_names = [channel_dict["measurement_name"] for channel_dict in
-                              self.channel_info]  # Extract the names of the channels
-        self.rotation_frequency = 2000 / 60  # rev/s  , Hz
+    def __init__(self, path_to_measuremet_campaign : pathlib.Path, channel_info, rapid_level = None):
+        self.folder_name = path_to_measuremet_campaign.name # The folder where the text files are stored
 
-        self.rapid_level = rapid_level
+        self.channel_info = channel_info  # Info defined for the channel
+        self.channel_names = [channel_dict["measurement_name"] for channel_dict in self.channel_info]  # Extract the names of the channels
+        self.rotation_frequency = 2000 / 60  # rev/s  , Hz # From the IMS document
+
+        self.rapid_level = rapid_level # Reduce size for prototyping purposes
 
         self.measurement_paths = list(ims_path.joinpath(self.folder_name).iterdir())
 
@@ -261,6 +261,7 @@ if __name__ == "__main__":
     folders_for_different_tests = ["1st_test", "2nd_test", "3rd_test/txt"]  # Each folder has text files with the data
 
     from dataset_management.ims_dataset.experiment_meta_data import channel_info
+
     for folder, folder_channel_info in zip(folders_for_different_tests, channel_info):
         test_obj = IMSTest(folder, folder_channel_info)
         test_obj.write_to_file("ims")
