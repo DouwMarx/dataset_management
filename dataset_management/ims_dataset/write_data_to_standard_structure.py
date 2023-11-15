@@ -1,4 +1,5 @@
 import itertools
+import json
 import pathlib
 import pickle
 import random
@@ -6,6 +7,8 @@ from datetime import datetime
 import numpy as np
 import pandas as pd
 from joblib import Parallel, delayed
+from matplotlib import pyplot as plt
+
 from dataset_management.ultils.write_data_in_standard_format import export_data_to_file_structure
 from file_definitions import ims_path
 from pypm.phenomenological_bearing_model.bearing_model import Bearing
@@ -34,7 +37,7 @@ class IMSTest(object):
 
         self.measurement_paths = list(path_to_measurement_campaign.iterdir())
         if self.rapid:
-            self.measurement_paths = np.random.choice(self.measurement_paths, size=30, replace=False)
+            self.measurement_paths = np.random.choice(self.measurement_paths, size=1000, replace=False)
 
         # Make sure the record numbers follow the correct time stamps for different samples.
         self.time_stamps = sorted(
@@ -127,19 +130,24 @@ class IMSTest(object):
 
     def identify_ground_truth_health_state(self):
         "Plot the kurtosis as a function of time and cut the data into run-in, reference, uncertain and faulty based on the standard deviation for the kurtosis"
-        documents = Parallel(n_jobs=8)(delayed(self.create_document_per_channel)(path) for path in tqdm(self.measurement_paths))
-        # Flatten the list of lists
-        documents = [item for sublist in documents for item in sublist]
+        # documents = Parallel(n_jobs=8)(delayed(self.create_document_per_channel)(path) for path in tqdm(self.measurement_paths))
+        # # Flatten the list of lists
+        # documents = [item for sublist in documents for item in sublist]
+        #
+        # df = pd.DataFrame(documents)
+        # print(df)
+        # # Compute the kurtosis for each sample row using the list in the "time_series" column
+        # df["kurtosis"] = df["time_series"].apply(lambda x: pd.Series(x).kurtosis())
+        # df["kurtosis"] = df["kurtosis"].astype(float)
+        #
+        # # Remove the time series data to save space
+        # df = df.drop(columns=["time_series"])
+        #
+        # # # Temporarily write to pickle file to save compute
+        # df.to_pickle("ims_test_{}.pkl".format(self.folder_name[0]))
+        df = pd.read_pickle("ims_test_{}.pkl".format(self.folder_name[0]))
 
-        df = pd.DataFrame(documents)
-        print(df)
-        # Compute the kurtosis for each sample row using the list in the "time_series" column
-        df["kurtosis"] = df["time_series"].apply(lambda x: pd.Series(x).kurtosis())
-        df["kurtosis"] = df["kurtosis"].astype(float)
-
-        # Remove the time series data to save space
-        df = df.drop(columns=["time_series"])
-
+        split_dict = {}
 
         # Plot the kurtosis as a function of time
         for measurement in self.labeled_measurement_names:
@@ -147,6 +155,7 @@ class IMSTest(object):
             df_for_channel = df[df["measurement_name"] == measurement]
             # Sort by time stamp
             df_for_channel = df_for_channel.sort_values(by="time_stamp")
+            df_for_channel = df_for_channel.reset_index(drop=True)
 
             measurement_kurtosis= df_for_channel["kurtosis"]
             measurement_time_steps = df_for_channel["time_stamp"]
@@ -156,29 +165,56 @@ class IMSTest(object):
             moving_median_kurtosis = measurement_kurtosis.rolling(window=10).median()
             # Split the data into run-in, reference, uncertain and faulty based on the kurtosis median and IQR
             # Get the first time index where the moving median is smaller than the median + 1*iqr
-            reference_start  =  measurement_time_steps[(median_kurtosis -0.5*iqr_kurtosis <moving_median_kurtosis) & (moving_median_kurtosis < median_kurtosis + 0.5*iqr_kurtosis)].iloc[0]
+            thresh_ref_start = 1
+            reference_start_idx  = moving_median_kurtosis[moving_median_kurtosis < median_kurtosis + thresh_ref_start*iqr_kurtosis].index[0]
 
-            # Get a point after the reference start where the kurtosis is larger than the median + 1*iqr
-            uncertain_start = measurement_time_steps[(reference_start < measurement_time_steps) & (measurement_kurtosis > median_kurtosis + 0.5*iqr_kurtosis)].iloc[0]
+            thresh_fault_start = 2
+            # Get a point after the reference start point where the kurtosis is larger than the median + 2*iqr
+            faulty_start_idx = moving_median_kurtosis[moving_median_kurtosis.index > reference_start_idx][moving_median_kurtosis > median_kurtosis + thresh_fault_start*iqr_kurtosis].index[0]
 
-            # Get a point after the uncertain start where the kurtosis is larger than the median + 2*iqr
-            faulty_start = measurement_time_steps[(uncertain_start < measurement_time_steps) & (measurement_kurtosis > median_kurtosis + 1*iqr_kurtosis)].iloc[0]
+            # Make uncertain start 90% of the way between reference and faulty
+            uncertain_start_idx = int(reference_start_idx + 0.9*(faulty_start_idx - reference_start_idx))
 
-            points_of_interest = [reference_start, uncertain_start, faulty_start]
+            points_of_interest = [reference_start_idx, uncertain_start_idx, faulty_start_idx]
+            split_dict[measurement] = points_of_interest
 
+            # Raise error is any of the points of interest are not in the data
+            print("points of interest: ", points_of_interest, "for signal of length: ", len(measurement_kurtosis))
+
+            # Plot the kurtosis as a function of time
             fig.add_trace(go.Scatter(x = measurement_time_steps, y = measurement_kurtosis, name=measurement))
+
+            # Plot the moving median kurtosis as a function of time
+            fig.add_trace(go.Scatter(x = measurement_time_steps,
+                                     y = moving_median_kurtosis,
+                                     name=measurement + " moving median",
+                                     line=dict(color="black")))
+
             # Plot the median and multiples of the IQR as horizontal lines
             fig.add_trace(go.Scatter(x = [measurement_time_steps.iloc[0], measurement_time_steps.iloc[-1]], y = [median_kurtosis, median_kurtosis], name=measurement + " median", line=dict(color="black")))
             for i in range(1,3):
                 fig.add_trace(go.Scatter(x = [measurement_time_steps.iloc[0], measurement_time_steps.iloc[-1]], y = [median_kurtosis + i*iqr_kurtosis, median_kurtosis + i*iqr_kurtosis], name=measurement + " {}x iqr".format(i), line=dict(color="black", dash="dash")))
 
-            # Plot a vertical line for each point of interest
+            # Plot a vertical line for each point of interest. Dont show the label
             for point in points_of_interest:
-                fig.add_trace(go.Scatter(x = [point, point], y = [measurement_kurtosis.min(), measurement_kurtosis.max()], name=measurement + " point of interest", line=dict(color="black", dash="dash")))
+                point = measurement_time_steps.iloc[point]
+                fig.add_trace(go.Scatter(x = [point, point], y = [measurement_kurtosis.min(), measurement_kurtosis.max()], line=dict(color="black", dash="dash"), showlegend=False))
             fig.update_layout(title="Kurtosis for test: " + self.folder_name[0])
+
+            # Label the axis
+            fig.update_xaxes(title_text="Time")
+            fig.update_yaxes(title_text="Kurtosis")
             fig.show()
 
+            # Save the figure as html
+            fig.write_html("ims_test_{}_{}_split.html".format(self.folder_name[0], measurement))
 
+            # # Save the figure as png
+            # fig.write_image("ims_test_{}_{}_split.png".format(self.folder_name[0], measurement))
+
+        # Save the split dict to json
+        with open("ims_test_{}_split.json".format(self.folder_name[0]), "w") as f:
+            json.dump(split_dict, f,default=str)
 
 
     def write_to_file(self, target_location=None):
@@ -186,44 +222,50 @@ class IMSTest(object):
         if target_location is None:
             target_location = pathlib.Path("/home/douwm/projects/PhD/code/biased_anomaly_detection/data")
 
-        process = self.create_document_per_channel
+        documents = Parallel(n_jobs=8)(delayed(self.create_document_per_channel)(path) for path in tqdm(self.measurement_paths))
+        # Flatten the list of lists
+        documents = [item for sublist in documents for item in sublist]
 
-        # measurement_paths = np.random.choice(self.measurement_paths, size=20, replace=False)
-        measurement_paths = self.measurement_paths
+        df = pd.DataFrame(documents)
 
-        # Serial
-        # results = [process(path) for path in tqdm(measurement_paths)]
+        split_dict =  json.load(open("ims_test_{}_split.json".format(self.folder_name[0]), "r")) # Load the dictionary prescribing the reference, uncertain and faulty split
 
-        # Parallel
-        documents = Parallel(n_jobs=14)(delayed(process)(path) for path in tqdm(measurement_paths))
+        for measurement in self.labeled_measurement_names:
+            channel_df= df[df["measurement_name"] == measurement]
+            channel_df = channel_df.sort_values(by="time_stamp")
+            channel_df = channel_df.reset_index(drop=True)
 
-        for channel in self.measurement_names:
-            fault_mode_for_channel = self.channel_info[self.measurement_names.index(channel)]["mode"]
+            # Get the split points
+            reference_start_idx, uncertain_start_idx, faulty_start_idx = np.array(split_dict[measurement]).astype(int)
 
-            samples_for_channel = [res_dict[channel] for res_dict in documents]
-            channel_df = pd.DataFrame(samples_for_channel)
+            # healthy_df = channel_df[channel_df["severity"] == 0]
+            # faulty_df = channel_df[channel_df["severity"] > 5]  # Severely damaged data
 
-            healthy_df = channel_df[channel_df["severity"] == 0]
-            faulty_df = channel_df[channel_df["severity"] > 5]  # Severely damaged data
+            healthy_df = channel_df.iloc[reference_start_idx:uncertain_start_idx]
+            faulty_df = channel_df.iloc[faulty_start_idx:]
 
-            # Extract the time signals are objects in the dataframe
+            # Extract the time signals
             healthy_time_signals = np.vstack(healthy_df["time_series"].values)
             faulty_time_signals = np.vstack(faulty_df["time_series"].values)
 
-            healthy_time_signals = pd.DataFrame(healthy_time_signals)
-            # Make sure there is a channel dimension such that (batch, channel, time)
-            faulty_time_signals = {str(fault_mode_for_channel): np.expand_dims(faulty_time_signals, axis=1)}
+            # Stack together and plot kurtosis to verify that the split is correct
+            stacked_time_signals = np.vstack([healthy_time_signals, faulty_time_signals])
+            kurtosis = pd.DataFrame(stacked_time_signals).kurtosis()
+            kurtosis.plot()
+            plt.show()
 
-            # Get the
+
+            # Make sure there is a channel dimension such that (batch, channel, time)
+            healthy_time_signals = np.expand_dims(healthy_time_signals, axis=1)
+            faulty_time_signals = {"faulty" : np.expand_dims(faulty_time_signals, axis=1)}
 
             export_data_to_file_structure(
-                dataset_name="ims" + "_test" + self.folder_name[0] + "_" + channel,
+                dataset_name="ims" + "_test" + self.folder_name[0] + "_" + measurement,
                 healthy_data=healthy_time_signals,
                 faulty_data_dict=faulty_time_signals,
                 export_path=target_location,
                 metadata=self.ims_meta_data
             )
-
 
 if __name__ == "__main__":
 
@@ -232,7 +274,6 @@ if __name__ == "__main__":
     for key, folder in test_folder_names.items():
         folder_channel_info = channel_info[key]
         path_to_folder = ims_path.joinpath(folder)
-        # test_obj = IMSTest(path_to_folder, folder_channel_info, rapid=True)
         test_obj = IMSTest(path_to_folder, folder_channel_info, rapid=False)
-        # test_obj.write_to_file("ims")
-        test_obj.identify_ground_truth_health_state()
+        test_obj.write_to_file()
+        # test_obj.identify_ground_truth_health_state()
