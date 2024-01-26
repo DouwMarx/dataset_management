@@ -1,5 +1,3 @@
-# Working with wost case data 
-
 See 
 
 https://engineering.case.edu/bearingdatacenter/normal-baseline-data
@@ -60,6 +58,6 @@ This is since all channels were not always measured and all measurement are acce
 
 A min and max speed measuremnt is available inside each of the mat files.
 
-Something that is rather  confusing is that drive-end and fan-end can refere to two different things.
+Something that is rather  confusing is that drive-end and fan-end can refer to two different things.
 In one case if refers to where the faulty bearing is placed for the test.
 In the other case it refers to the location of the accelerometer (On the housing).

@@ -1,20 +1,14 @@
-import itertools
 import json
 import pathlib
-import pickle
-import random
 from datetime import datetime
 import numpy as np
 import pandas as pd
 from joblib import Parallel, delayed
-from matplotlib import pyplot as plt
-
 from dataset_management.ultils.write_data_in_standard_format import export_data_to_file_structure
 from file_definitions import ims_path
 from pypm.phenomenological_bearing_model.bearing_model import Bearing
 from tqdm import tqdm
 import plotly.graph_objects as go
-
 
 class IMSTest(object):
     """
@@ -25,11 +19,11 @@ class IMSTest(object):
         self.folder_name = path_to_measurement_campaign.name  # The folder where the text files are stored
 
         self.channel_info = channel_info  # Info defined for the channel
-        # self.channel_names = [channel_dict["measurement_name"] for channel_dict in self.channel_info]  # Extract the names of the channels
 
         # Use only the channel names with verified faults such that "mode is not None"
         self.measurement_names = [channel_dict["measurement_name"] for channel_dict in self.channel_info]
-        self.labeled_measurement_names  = [channel_dict["measurement_name"] for channel_dict in self.channel_info if channel_dict["mode"] is not None]
+
+        self.labeled_measurement_names = [channel_dict["measurement_name"] for channel_dict in self.channel_info if channel_dict["mode"] is not None]
 
         self.rotation_frequency = 2000 / 60  # rev/s  , Hz # From the IMS document
 
@@ -96,14 +90,10 @@ class IMSTest(object):
     def create_document_per_channel(self, filepath):
         dataframe_of_measurement_for_each_channel = self.read_file_as_df(filepath)
 
-        # docs_per_channel = {col: "dum" for col in
-        #                     dataframe_of_measurement_for_each_channel.columns}  # Empty list for each channel in the df
         list_of_docs = []
         for channel_id, channel_name in enumerate(dataframe_of_measurement_for_each_channel.columns):
             measurement_for_channel = dataframe_of_measurement_for_each_channel[channel_name].values
             doc = self.create_document(list(measurement_for_channel), channel_id, filepath)
-            # doc_per_channel.append(doc)
-            # docs_per_channel[channel_name] = doc
             list_of_docs.append(doc)
         return list_of_docs
 
@@ -209,9 +199,6 @@ class IMSTest(object):
             # Save the figure as html
             fig.write_html("ims_test_{}_{}_split.html".format(self.folder_name[0], measurement))
 
-            # # Save the figure as png
-            # fig.write_image("ims_test_{}_{}_split.png".format(self.folder_name[0], measurement))
-
         # Save the split dict to json
         with open("ims_test_{}_split.json".format(self.folder_name[0]), "w") as f:
             json.dump(split_dict, f,default=str)
@@ -228,18 +215,15 @@ class IMSTest(object):
 
         df = pd.DataFrame(documents)
 
-        split_dict =  json.load(open("ims_test_{}_split.json".format(self.folder_name[0]), "r")) # Load the dictionary prescribing the reference, uncertain and faulty split
+        split_dict =json.load(open("ims_test_{}_split.json".format(self.folder_name[0]), "r")) # Load the dictionary prescribing the reference, uncertain and faulty split
 
         for measurement in self.labeled_measurement_names:
             channel_df= df[df["measurement_name"] == measurement]
             channel_df = channel_df.sort_values(by="time_stamp")
             channel_df = channel_df.reset_index(drop=True)
 
-            # Get the split points
+            # Get the split points based on the kurtosis levels
             reference_start_idx, uncertain_start_idx, faulty_start_idx = np.array(split_dict[measurement]).astype(int)
-
-            # healthy_df = channel_df[channel_df["severity"] == 0]
-            # faulty_df = channel_df[channel_df["severity"] > 5]  # Severely damaged data
 
             healthy_df = channel_df.iloc[reference_start_idx:uncertain_start_idx]
             faulty_df = channel_df.iloc[faulty_start_idx:]
@@ -249,15 +233,16 @@ class IMSTest(object):
             faulty_time_signals = np.vstack(faulty_df["time_series"].values)
 
             # Stack together and plot kurtosis to verify that the split is correct
-            stacked_time_signals = np.vstack([healthy_time_signals, faulty_time_signals])
-            kurtosis = pd.DataFrame(stacked_time_signals).kurtosis()
-            kurtosis.plot()
-            plt.show()
-
+            # stacked_time_signals = np.vstack([healthy_time_signals, faulty_time_signals])
+            # kurtosis = scipy.stats.kurtosis(stacked_time_signals, axis=1)
+            # plt.plot(kurtosis)
+            # plt.show()
 
             # Make sure there is a channel dimension such that (batch, channel, time)
             healthy_time_signals = np.expand_dims(healthy_time_signals, axis=1)
-            faulty_time_signals = {"faulty" : np.expand_dims(faulty_time_signals, axis=1)}
+
+            mode_name = "".join([str(mode) for mode in channel_df["mode"].unique()])
+            faulty_time_signals = {mode_name : np.expand_dims(faulty_time_signals, axis=1)}
 
             export_data_to_file_structure(
                 dataset_name="ims" + "_test" + self.folder_name[0] + "_" + measurement,
