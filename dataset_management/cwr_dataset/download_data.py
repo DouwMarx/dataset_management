@@ -2,9 +2,9 @@ import os.path
 import urllib.request
 import re
 from tqdm import tqdm
-from urllib3 import Retry, PoolManager
 
-"""This script downloads the Case western reserve 12kHz and 48KHz data from the internet and saves it to the data directory"""
+"""Downloads Case western reserve 12kHz and 48KHz data from the internet and saves it to the data prescribed below"""
+save_path = "/home/douwm/data/CWR"
 
 def get_all_mat_data_from_cwr_page(download_path, page_url):
     # Create the download path directory if it does not exist
@@ -20,6 +20,7 @@ def get_all_mat_data_from_cwr_page(download_path, page_url):
     # Remove the href=" and " from the strings
     mat_files = [re.sub(r'href="|"', '', mat_file) for mat_file in mat_files]
 
+    print("Found the following files .mat files: ")
     print(mat_files)
 
     # Download the files and save them to the download_path with the same name as in the web page
@@ -35,14 +36,12 @@ def get_all_mat_data_from_cwr_page(download_path, page_url):
                 print("Retrying: ", file_url)
                 pass
 
-# For the drive-end measurements, retrieve the web page in html format
+# Define the urls to download the data from
 data_12k_de_bearing_url = "https://engineering.case.edu/bearingdatacenter/12k-drive-end-bearing-fault-data"
 data_48k_de_bearing_url = "https://engineering.case.edu/bearingdatacenter/48k-drive-end-bearing-fault-data"
 data_12k_fe_bearing_url = "https://engineering.case.edu/bearingdatacenter/12k-fan-end-bearing-fault-data"
 data_48k_normal = "https://engineering.case.edu/bearingdatacenter/normal-baseline-data"
 
-
-save_path = "/home/douwm/data/CWR"
-
+# Download the data for each url
 for download_url in [data_12k_de_bearing_url, data_48k_de_bearing_url, data_12k_fe_bearing_url, data_48k_normal]:
     get_all_mat_data_from_cwr_page(save_path, download_url)
