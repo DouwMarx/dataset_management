@@ -39,7 +39,7 @@ class CWR(object):
     Used to read and write the CWR dataset to a standard file structure
     """
 
-    def __init__(self, required_average_number_of_events_per_rev=30, name="CWR"):
+    def __init__(self, required_average_number_of_events_per_rev=30, name="CWR",data_path=cwr_path):
 
         """
         :param required_average_number_of_events_per_rev:   The average number of fault events required per revolution
@@ -47,7 +47,7 @@ class CWR(object):
         """
 
         self.name = name
-
+        self.data_path = data_path
         # Load the meta data as extracted from Smith and Randal table A2.
         self.sample_labels = get_cwru_meta_data_from_csv()
 
@@ -142,7 +142,7 @@ class CWR(object):
 
     def get_data_per_channel_from_mat_file(self, file_number):
         sample_meta_data, derived_meta_data = self.get_label(file_number)  # First load the meta data
-        path_to_mat_file = cwr_path.joinpath(str(file_number) + ".mat")
+        path_to_mat_file = self.data_path.joinpath(str(file_number) + ".mat")
         mat_file = loadmat(str(path_to_mat_file))  # Load the .mat file
 
         # Find the channels that are present in the mat file and the corresponding channel names
@@ -263,11 +263,12 @@ def write_cwru_to_standard_file_structure(min_average_events_per_rev):
                                       )
 
 
-def get_cwru_data_frame(min_average_events_per_rev, path_to_write=None):
+def get_cwru_data_frame(min_average_events_per_rev, path_to_write=None, data_path=cwr_path):
     # Writes the data to the standard file structure
     cwr_data = CWR(
         required_average_number_of_events_per_rev=min_average_events_per_rev,
-        name="cwr" + str(min_average_events_per_rev)
+        name="cwr" + str(min_average_events_per_rev),
+        data_path=data_path
     )
 
     # Load all signals into memory
@@ -276,13 +277,14 @@ def get_cwru_data_frame(min_average_events_per_rev, path_to_write=None):
     # Write to pickle
     if path_to_write is not None:
         df.to_pickle(path_to_write)
-
     return df
 
 
 if __name__ == "__main__":
     min_average_events_per_rev = 8
     # write_cwru_to_standard_file_structure(min_average_events_per_rev) # If you want folders with each operating condition
-
     this_directory = pathlib.Path(__file__).parent
-    get_cwru_data_frame(min_average_events_per_rev, path_to_write=this_directory.joinpath("cwr_dataframe.pkl")) # One big dataframe with everything
+    get_cwru_data_frame(min_average_events_per_rev,
+                        data_path= this_directory,
+                        # data_path= cwr_path,
+                        path_to_write=this_directory.joinpath("cwr_dataframe.pkl")) # One big dataframe with everything

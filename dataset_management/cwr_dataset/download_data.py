@@ -2,9 +2,13 @@ import os.path
 import urllib.request
 import re
 from tqdm import tqdm
+import pathlib
 
 """Downloads Case western reserve 12kHz and 48KHz data from the internet and saves it to the data prescribed below"""
-save_path = "/home/douwm/data/CWR"
+# Save in parent directory of this file
+
+# save_path = "/home/douwm/data/CWR"
+save_path = pathlib.Path(__file__).parent
 
 def get_all_mat_data_from_cwr_page(download_path, page_url):
     # Create the download path directory if it does not exist
