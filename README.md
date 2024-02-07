@@ -1,3 +1,3 @@
 # Repository for managing datasets
 
-Set up new environment and install the required packages e.g. `pip install -r requirements.txt`.
+Set up new environment and install the required packages e.g. `pip install -r requirements.txt` or `conda install --file requirements.txt`.

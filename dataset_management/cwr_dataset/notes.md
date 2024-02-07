@@ -52,3 +52,4 @@ BSF: 2.357
 Something that is rather confusing is that terms like drive-end and fan-end can refer to two different things.
 In one case, if refers to where the faulty bearing is placed for the test.
 In the other case, it refers to the location where the measurement is made.
+

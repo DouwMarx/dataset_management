@@ -16,8 +16,9 @@ Note that "healthy data" at 12KHz is obtained by down sampling the 48KHz referen
 def get_cwru_meta_data_from_csv():
     # Load the data table from the Smith and Randal paper with dataset information
     # This table is also directly available from the website source of the dataset
+    this_file = pathlib.Path(__file__)
 
-    meta_data = pd.read_csv("meta_data_table.csv", dtype=str)  # All data is stored as strings
+    meta_data = pd.read_csv(this_file.parent.joinpath("meta_data_table.csv"), dtype=str)  # All data is stored as strings
     value_cols = ['Inner Race Fault',
                   'Ball Fault',
                   'Outer Race Fault: Centre',
