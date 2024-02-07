@@ -1,4 +1,6 @@
 # Load the dataframe containing all signals and meta-data
+import pathlib
+
 import numpy as np
 import pandas as pd
 from scipy.signal import butter, filtfilt
@@ -64,7 +66,11 @@ def get_derived_features_and_domain_knowledge(row):
 
 
 if __name__ == "__main__":
-    df = get_cwru_data_frame(min_average_events_per_rev=50)
+    this_folder = pathlib.Path(__file__).parent
+    df = get_cwru_data_frame(min_average_events_per_rev=50,
+                             path_to_write= this_folder.joinpath("cwru_env_spec.pkl"),
+                             data_path=this_folder
+                             )
     # Further limit to DE measurement location (Measure at the location where the faulty is present)
 
     new_columns = df.apply(get_derived_features_and_domain_knowledge, axis=1, result_type="expand")
