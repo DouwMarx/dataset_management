@@ -35,7 +35,7 @@ def get_all_mat_data_from_cwr_page(download_path, page_url):
                 urllib.request.urlretrieve(file_url, os.path.join(download_path, os.path.basename(file_url)))
                 break
             except:
-                if retries == 4:
+                if retries == 50:
                     raise Exception("Could not download file: ", file_url)
                 print("Retrying: ", file_url)
                 pass
