@@ -3,6 +3,72 @@
 2) Get an organised dataframe (time series, cut into chunks) for different operating conditions, fault modes, fault severity, sampling rate and sensor location with the `write_data_to_standard_structure.py` script. This will write the data as a chunky pickle file (Alternatively, you can just use the `get_cwru_data_frame` function on demand).
 3) For envelope spectrum data and some derived features including expected fault frequencies, run `envelope_spectrum_and_expected_fault_spectrum.py`. This will add columns to the existing dataframe with the envelope spectra and an expected fault spectrum.
 
+# More detailed instructions
+## Instructions to Download and Run Script
+
+### Step 1: Clone the Repository
+
+First, you need to clone the repository from GitHub. Open a terminal and navigate to the directory where you want to clone the repository. Then, run the following command:
+
+```bash
+git clone https://github.com/DouwMarx/dataset_management.git
+```
+
+This will create a new directory named `dataset_management` in your current directory.
+
+Alternatively, you can download the repository as a zip file and extract it to a directory of your choice.
+
+### Step 2: Navigate to the Repository Directory
+
+Change your current directory to the `dataset_management` directory:
+
+```bash
+cd dataset_management
+```
+
+### Step 3: Run the `download_data.py` Script
+
+Now, you are in the correct directory to run the `download_data.py` script. Run the following command:
+
+```bash
+python cwr_dataset/download_data.py
+```
+
+This will download the necessary data and save it in the appropriate directories.
+
+### Step 4: Run the `get_envelope_and_fault_locations.py` Script
+
+After the `download_data.py` script has successfully completed, you can run the `get_envelope_and_fault_locations.py` script. Run the following command:
+
+```bash
+python cwr_dataset/get_envelope_and_fault_locations.py
+```
+
+This will execute the script and perform the necessary operations.
+
+#### (If trouble with finding module): Add Parent Directory to Python Path
+
+##### For Windows:
+```bash
+set PYTHONPATH=%cd%\..;%PYTHONPATH%
+```
+
+##### For Linux:
+```bash
+export PYTHONPATH=$(dirname $PWD):$PYTHONPATH
+```
+
+### Note
+
+Ensure that you have the necessary Python environment and all the required packages installed. You can check the `requirements.txt` file in the repository for the list of required packages. You can install them using pip:
+
+```bash
+pip install -r requirements.txt
+```
+
+Remember to run all commands from the root directory of the cloned repository (`dataset_management`). This will prevent errors related to running from the wrong directory or `dataset_management` being undefined.
+
+
 # Source and references
 
 See 
