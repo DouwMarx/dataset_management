@@ -8,7 +8,11 @@ import pathlib
 # Save in parent directory of this file
 
 # save_path = "/home/douwm/data/CWR"
-save_path = pathlib.Path(__file__).parent
+
+# make new folder for raw data if it does not exist
+save_path = pathlib.Path(__file__).parent.joinpath("raw_data")
+if not os.path.exists(save_path):
+    os.makedirs(save_path)
 
 def get_all_mat_data_from_cwr_page(download_path, page_url):
     # Create the download path directory if it does not exist
@@ -49,3 +53,5 @@ data_48k_normal = "https://engineering.case.edu/bearingdatacenter/normal-baselin
 # Download the data for each url
 for download_url in [data_12k_de_bearing_url, data_48k_de_bearing_url, data_12k_fe_bearing_url, data_48k_normal]:
     get_all_mat_data_from_cwr_page(save_path, download_url)
+
+print("Data downloaded and saved to: ", save_path)

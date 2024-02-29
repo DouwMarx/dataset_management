@@ -144,6 +144,8 @@ class CWR(object):
     def get_data_per_channel_from_mat_file(self, file_number):
         sample_meta_data, derived_meta_data = self.get_label(file_number)  # First load the meta data
         path_to_mat_file = self.data_path.joinpath(str(file_number) + ".mat")
+
+        print("Loading file: ", path_to_mat_file)
         mat_file = loadmat(str(path_to_mat_file))  # Load the .mat file
 
         # Find the channels that are present in the mat file and the corresponding channel names
@@ -284,8 +286,13 @@ def get_cwru_data_frame(min_average_events_per_rev, path_to_write=None, data_pat
 if __name__ == "__main__":
     min_average_events_per_rev = 8
     # write_cwru_to_standard_file_structure(min_average_events_per_rev) # If you want folders with each operating condition
-    this_directory = pathlib.Path(__file__).parent
+    raw_directory = pathlib.Path(__file__).parent.joinpath("raw_data")
+    write_directory = pathlib.Path(__file__).parent.joinpath("processed_data")
+    # Make write directory if it does not exist
+    if not write_directory.exists():
+        write_directory.mkdir()
+
     get_cwru_data_frame(min_average_events_per_rev,
-                        data_path= this_directory,
+                        data_path= raw_directory,
                         # data_path= cwr_path,
-                        path_to_write=this_directory.joinpath("cwr_dataframe.pkl")) # One big dataframe with everything
+                        path_to_write=write_directory.joinpath("cwr_dataframe.pkl")) # One big dataframe with everything

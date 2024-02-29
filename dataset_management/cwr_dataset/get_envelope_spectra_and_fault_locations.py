@@ -66,17 +66,20 @@ def get_derived_features_and_domain_knowledge(row):
 
 
 if __name__ == "__main__":
-    this_folder = pathlib.Path(__file__).parent
-    df = get_cwru_data_frame(min_average_events_per_rev=50,
-                             path_to_write= this_folder.joinpath("cwru_env_spec.pkl"),
-                             data_path=this_folder
+    raw_folder = pathlib.Path(__file__).parent.joinpath("raw_data")
+    processed_folder = pathlib.Path(__file__).parent.joinpath("processed_data")
+    if not processed_folder.exists():
+        processed_folder.mkdir()
+
+    df = get_cwru_data_frame(min_average_events_per_rev=10,
+                             data_path=raw_folder
                              )
     # Further limit to DE measurement location (Measure at the location where the faulty is present)
 
     new_columns = df.apply(get_derived_features_and_domain_knowledge, axis=1, result_type="expand")
     df[new_columns.columns] = new_columns
     # Write to pickle
-    df.to_pickle("envelope_spectrum_and_expected_fault_spectrum.pkl")
+    df.to_pickle(processed_folder.joinpath("cwru_env_spec.pkl"))
 
     df = df[df["Measurement Location"] == "DE"]
     for random_row_number in np.random.choice(df.index, 20):

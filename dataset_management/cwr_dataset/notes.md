@@ -20,7 +20,7 @@ Alternatively, you can download the repository as a zip file and extract it to a
 
 ### Step 2: Navigate to the Repository Directory
 
-Change your current directory to the `dataset_management` directory:
+Make sure you are in to the `dataset_management` directory:
 
 ```bash
 cd dataset_management
@@ -31,17 +31,16 @@ cd dataset_management
 Now, you are in the correct directory to run the `download_data.py` script. Run the following command:
 
 ```bash
-python cwr_dataset/download_data.py
+python dataset_management/cwr_dataset/download_data.py
 ```
-
-This will download the necessary data and save it in the appropriate directories.
+This will download the necessary data and save it in a newly created  `raw_data` directory in the `cwr_dataset` directory.
 
 ### Step 4: Run the `get_envelope_and_fault_locations.py` Script
 
 After the `download_data.py` script has successfully completed, you can run the `get_envelope_and_fault_locations.py` script. Run the following command:
 
 ```bash
-python cwr_dataset/get_envelope_and_fault_locations.py
+python dataset_management/cwr_dataset/get_envelope_and_fault_locations.py
 ```
 
 This will execute the script and perform the necessary operations.
@@ -93,7 +92,7 @@ It is typically much harder to detect a fault with the Fan-end (FE) measurement 
 Dataset that have detectable fault for all modes (According to Randall and Smith, 2009) are:
 12k data, Drive end (DE)
 Record numbers are:
-Inner:            210 
+Inner:           210 
 Ball:             223
 Outer (Centered): 235
 Healthy            98
