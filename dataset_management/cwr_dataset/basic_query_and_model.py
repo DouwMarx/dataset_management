@@ -47,10 +47,10 @@ healthy_query = (df["Sampling Rate [kHz]"] == sampling_rate) & \
 # After the query, in this example, the dataframe should only have one row (Datasets from different operating conditions/fault severities can of course be combined)
 faulty_data = df[faulty_query]
 healthy_data = df[healthy_query]
-input_features = ["Envelope Spectrum"]
+input_features = "Envelope Spectrum"
 
-X_healthy = np.array(list(healthy_data["Envelope Spectrum"])).squeeze() # Data has a channel dimension which is squeezed away here
-X_faulty = np.array(list(faulty_data["Envelope Spectrum"])).squeeze()
+X_healthy = np.array(list(healthy_data[input_features])).squeeze() # Data has a channel dimension which is squeezed away here
+X_faulty = np.array(list(faulty_data[input_features])).squeeze()
 
 # Create labels
 y_healthy = np.zeros(X_healthy.shape[0])
@@ -71,6 +71,7 @@ pipe.fit(X_train, y_train)
 
 # Evaluate
 y_pred = pipe.predict(X_test)
+print("")
 print("Classification report: ", sklearn.metrics.classification_report(y_test, y_pred))
 
 
