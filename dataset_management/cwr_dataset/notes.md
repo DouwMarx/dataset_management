@@ -2,7 +2,7 @@
 1) Download the data by running the `download_data.py` script. This will download the data from the Case Western Reserve University Bearing Data Center. Make sure to update the path where the data is saved.
 2) Get an organised dataframe (time series, cut into chunks) for different operating conditions, fault modes, fault severity, sampling rate and sensor location with the `write_data_to_standard_structure.py` script. This will write the data as a chunky pickle file (Alternatively, you can just use the `get_cwru_data_frame` function on demand).
 3) For envelope spectrum data and some derived features including expected fault frequencies, run `envelope_spectrum_and_expected_fault_spectrum.py`. This will add columns to the existing dataframe with the envelope spectra and an expected fault spectrum.
-4) For a basic script making queries on the dataframe and training a basic model, see `basic_query_and_model.py`.
+4) For a basic script making queries on the dataframe and training a basic model, see `basic_query_and_model.py` (Requires first downloading the data and running the `get_envelope_and_fault_locations.py` script).
 
 # More detailed instructions
 ## Instructions to Download and Run Script
