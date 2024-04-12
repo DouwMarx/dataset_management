@@ -7,7 +7,7 @@ from scipy.signal import decimate
 from scipy.io import loadmat
 from dataset_management.ultils.time_frequency import get_required_signal_length_for_required_number_of_events
 from dataset_management.ultils.write_data_in_standard_format import export_data_to_file_structure
-from file_definitions import cwr_path
+from file_definitions import cwr_path, biased_anomaly_detection_path
 
 """
 The case western Reserve dataset has multiple sampling rates, operating conditions, fault modes, fault severities and measurement locations.
@@ -282,8 +282,7 @@ def write_cwru_to_standard_file_structure(min_average_events_per_rev):
         export_data_to_file_structure(dataset_name=dataset_name,
                                       healthy_data=healthy_data,
                                       faulty_data_dict=faulty_data_dict,
-                                      export_path=pathlib.Path(
-                                          "/home/douwm/projects/PhD/code/biased_anomaly_detection/data"),
+                                      export_path=biased_anomaly_detection_path,
                                       metadata=meta_data
                                       )
 
