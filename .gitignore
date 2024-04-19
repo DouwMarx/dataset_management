@@ -157,3 +157,4 @@ cython_debug/
 #.pdf plots
 *.pdf
 
+dataset_management/cwr_dataset/processed_data/

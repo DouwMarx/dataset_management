@@ -5,7 +5,8 @@ import numpy as np
 import pandas as pd
 from scipy.signal import decimate
 from scipy.io import loadmat
-from dataset_management.ultils.time_frequency import get_required_signal_length_for_required_number_of_events
+from dataset_management.ultils.time_frequency import get_required_signal_length_for_required_number_of_events, \
+    get_number_of_fault_events_for_segment_length
 from dataset_management.ultils.write_data_in_standard_format import export_data_to_file_structure
 from file_definitions import cwr_path, biased_anomaly_detection_path
 
@@ -66,14 +67,18 @@ class CWR(object):
         minimum_number_of_events_occurring_per_revolution = 2.357  # The slowest expected fault frequency is 2.357 Hz, see Smith and Randal Table 2
 
         # Compute the required signal length to ensure that there are at least the required number of fault events per sample
-        self.cut_signal_length = get_required_signal_length_for_required_number_of_events(mean_rpm,
-                                                                                          minimum_number_of_events_occurring_per_revolution,
-                                                                                          12000,  # TODO: The sampling rate is hard-coded and does not apply to the datasets sampled at a higher rate.
-                                                                                          required_average_number_of_events_per_segment
-                                                                                          )
+        self.cut_signal_length_for_12k = get_required_signal_length_for_required_number_of_events(mean_rpm,
+                                                                                                  minimum_number_of_events_occurring_per_revolution,
+                                                                                                  12000,  # TODO: The sampling rate is hard-coded and does not apply to the datasets sampled at a higher rate.
+                                                                                                  required_average_number_of_events_per_segment
+                                                                                                  )
         print("Signals cut to length: {}, ensuring that there are at least {} events per revolution".format(
-            self.cut_signal_length, required_average_number_of_events_per_segment))
+            self.cut_signal_length_for_12k, required_average_number_of_events_per_segment))
         print("")
+
+        worst_case_faults_per_segment = get_number_of_fault_events_for_segment_length(min(rpms), minimum_number_of_events_occurring_per_revolution, 12000, self.cut_signal_length_for_12k)
+        best_case_faults_per_segment = get_number_of_fault_events_for_segment_length(max(rpms), minimum_number_of_events_occurring_per_revolution, 12000, self.cut_signal_length_for_12k)
+        print("Worst case  and best case fault events per segment: ", worst_case_faults_per_segment, best_case_faults_per_segment)
 
         self.n_faults_per_revolution = {mode: self.get_expected_fault_frequency_for_mode(mode, 60) for mode in
                                         ["inner", "outer", "ball"]}  # 60 RPM = 1 Hz = 1 rev/s
@@ -81,8 +86,8 @@ class CWR(object):
         self.dataset_meta_data = {
             "n_faults_per_revolution": self.n_faults_per_revolution,  # Should be sampling rate independent
             "long_name": "Case Western  Reserve  University  Bearing",
-            "cut_signal_length": self.cut_signal_length,  # Remember that this length is sampling rate dependent
-            "signal_length": self.cut_signal_length,  # Remove duplicate information
+            "cut_signal_length": self.cut_signal_length_for_12k,  # Remember that this length is sampling rate dependent
+            "signal_length": self.cut_signal_length_for_12k,  # Remove duplicate information
             "channel_names": ["DE", "FE", "BA"],  # Measurements are taken at the drive end, fan end and base
             "_id": "meta_data"
         }
@@ -104,6 +109,7 @@ class CWR(object):
         Pull the meta data and other associated "target" information for a particular file from the CSV file with the meta data
         """
 
+        # Read a row from the CSV file with the meta data
         sample_meta_data = self.sample_labels[self.sample_labels["File Number"] == file_stem].iloc[0].to_dict()
 
         shaft_speed = int(sample_meta_data["Shaft speed [rpm]"])
@@ -135,16 +141,9 @@ class CWR(object):
     def segment_signals(self, signal, fs_is_48KHz=False):
 
         if fs_is_48KHz:
-            cut_length = self.cut_signal_length * 4 # Cut signal length was computed for 12KHz data, so we need to multiply by 4 to get the correct length for 48KHz data
+            cut_length = self.cut_signal_length_for_12k * 4 # Cut signal length was computed for 12KHz data, so we need to multiply by 4 to get the correct length for 48KHz data
         else:
-            cut_length = self.cut_signal_length
-
-        # Reshape data by cutting the signal into segments of length cut_length and thereby adding to the batch dimension
-        # Residual data is discarded
-        # n_segments = data.shape[2] // cut_length
-        # data = data[:, :, :n_segments * cut_length]
-        # data = data.reshape(n_segments, 1,
-        #                     cut_length)  # (batch_size = n_segments, n_channels = 1, signal_length)
+            cut_length = self.cut_signal_length_for_12k
 
         step_size = int(cut_length * (1 - self.overlap))  # step size derived from overlap
         n_segments = (len(signal) - cut_length) // step_size + 1  # number of segments considering overlap
@@ -160,17 +159,17 @@ class CWR(object):
 
     def get_data_per_channel_from_mat_file(self, file_number):
         sample_meta_data, derived_meta_data = self.get_label(file_number)  # First load the meta data from the CSV file
+
         path_to_mat_file = self.data_path.joinpath(str(file_number) + ".mat")
-        # print("Loading file: ", path_to_mat_file)
         mat_file = loadmat(str(path_to_mat_file))  # Load the .mat file
 
         sampling_rate_associated_with_file = sample_meta_data["Sampling Rate [kHz]"]
 
         # Find the channels that are present in the mat file and the corresponding channel names
         present_measurement_locations = [key for key in mat_file.keys() if
-                            any(channel in key for channel in self.dataset_meta_data["channel_names"])]
+                            any(channel in key for channel in self.dataset_meta_data["channel_names"])] # Channel names as in the mat file
         present_measurement_location_names = [channel for channel in self.dataset_meta_data["channel_names"] if
-                                 any(channel in key for key in mat_file.keys())]
+                                 any(channel in key for key in mat_file.keys())] # Simpler channel names
 
         datasets = []  # Each file might contrain multiple measurement channels (measurement locations), so we loop through all channels and add each as a "dataset"
         for measurement_location, measurement_location_name in zip(present_measurement_locations, present_measurement_location_names):
@@ -196,13 +195,13 @@ class CWR(object):
             # This means that a given 48KHz reference sample might be used multiple times, once at 48KHz and once at 12KHz
             if sample_meta_data["Fault Mode"] == "Reference":
                 signal_ds = self.down_sample_reference(signal)
-                channel_specific_meta_data.update({"Sampling Rate [kHz]": "12"})  # Update the sampling rate to 12 kHz
+                channel_specific_meta_data_ref = sample_meta_data.copy()
+                channel_specific_meta_data_ref.update({"Sampling Rate [kHz]": "12"})  # Update the sampling rate to 12 since it was downsampled
 
                 data_ds = self.segment_signals(signal_ds, fs_is_48KHz=False)
-                channel_specific_meta_data = sample_meta_data.copy()
-                channel_specific_meta_data.update({"Measurement Location": measurement_location_name})
+                channel_specific_meta_data_ref.update({"Measurement Location": measurement_location_name})
 
-                datasets.append((data_ds, channel_specific_meta_data, derived_meta_data))
+                datasets.append((data_ds, channel_specific_meta_data_ref, derived_meta_data))
         return datasets
 
     def load_all_mat_files(self):
