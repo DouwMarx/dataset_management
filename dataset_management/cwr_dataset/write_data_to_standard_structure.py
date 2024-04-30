@@ -86,8 +86,8 @@ class CWR(object):
         self.dataset_meta_data = {
             "n_faults_per_revolution": self.n_faults_per_revolution,  # Should be sampling rate independent
             "long_name": "Case Western  Reserve  University  Bearing",
-            "cut_signal_length": self.cut_signal_length_for_12k,  # Remember that this length is sampling rate dependent
-            "signal_length": self.cut_signal_length_for_12k,  # Remove duplicate information
+            "cut_signal_length_for_12k": self.cut_signal_length_for_12k,  # Remember that this length is sampling rate dependent
+            "signal_length_for_12k": self.cut_signal_length_for_12k,  # Remove duplicate information
             "channel_names": ["DE", "FE", "BA"],  # Measurements are taken at the drive end, fan end and base
             "_id": "meta_data"
         }
@@ -241,7 +241,8 @@ def write_cwru_to_standard_file_structure(min_average_events_per_rev):
     # Writes the data to the standard file structure
     cwr_data = CWR(
         required_average_number_of_events_per_segment=min_average_events_per_rev,
-        name="cwr" + str(min_average_events_per_rev)
+        name="cwr" + str(min_average_events_per_rev),
+       overlap=0.0 # Notice no overlap is used in this variant
     )
 
     # Load all signals into memory
@@ -286,7 +287,7 @@ def write_cwru_to_standard_file_structure(min_average_events_per_rev):
                                       )
 
 
-def get_cwru_data_frame(min_average_events_per_rev,overlap, path_to_write=None, data_path=cwr_path):
+def get_cwru_data_frame(min_average_events_per_rev, overlap, path_to_write=None, data_path=cwr_path):
     # Writes the data to the standard file structure
     cwr_data = CWR(
         required_average_number_of_events_per_segment=min_average_events_per_rev,
@@ -306,7 +307,8 @@ def get_cwru_data_frame(min_average_events_per_rev,overlap, path_to_write=None, 
 
 if __name__ == "__main__":
     min_average_events_per_rev = 8
-    # write_cwru_to_standard_file_structure(min_average_events_per_rev) # If you want folders with each operating condition
+    write_cwru_to_standard_file_structure(min_average_events_per_rev) # If you want folders with each operating condition
+
     raw_directory = pathlib.Path(__file__).parent.joinpath("raw_data")
     write_directory = pathlib.Path(__file__).parent.joinpath("processed_data")
     # Make write directory if it does not exist
@@ -314,6 +316,7 @@ if __name__ == "__main__":
         write_directory.mkdir()
 
     get_cwru_data_frame(min_average_events_per_rev,
+                        overlap=0.5,
                         data_path= raw_directory,
                         # data_path= cwr_path,
                         path_to_write=write_directory.joinpath("cwr_dataframe.pkl")) # One big dataframe with everything

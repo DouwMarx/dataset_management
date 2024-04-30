@@ -10,14 +10,16 @@ processed_dir = pathlib.Path(__file__).parent.joinpath("processed_data")
 if not processed_dir.exists():
     processed_dir.mkdir()
 
+min_average_events_per_rev = 8
+overlap = 0.5
 raw_folder = pathlib.Path(__file__).parent.joinpath("raw_data")
-df = get_cwru_data_frame(min_average_events_per_rev=8,
-                         overlap=0.5,
+df = get_cwru_data_frame(min_average_events_per_rev=min_average_events_per_rev,
+                         overlap=overlap,
                          data_path=raw_folder
                          )
 
 print("Dataset sizes:", df["Signals"].apply(lambda x:np.shape(x)[0]).unique())
-print("Signal lengths:", df["Signals"].apply(lambda x:np.shape(x)[1]).unique())
+print("Signal lengths:", df["Signals"].apply(lambda x:np.shape(x)[-1]).unique())
 
 train_ratio = 0.6
 val_ratio = 0.2
@@ -64,5 +66,5 @@ for measurement_location in measurement_locations: # Make 4 separate datasets
         dataset_df = pd.DataFrame(df_entries)
 
         # Save the data
-        dataset_df.to_pickle(processed_dir.joinpath(f"{measurement_location}_{sampling_rate}_binary-all_fault_modes_speed_fault_location.pkl"))
+        dataset_df.to_pickle(processed_dir.joinpath(f"{measurement_location}_{sampling_rate}kHz_{min_average_events_per_rev}evperrev_{overlap}ovrlp_binary-all_fault_modes_speed_fault_location.pkl"))
 
