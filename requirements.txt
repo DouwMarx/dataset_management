@@ -1,6 +1,7 @@
 joblib
 numpy
 pandas
+openpyxl
 scikit-learn
 scipy
 tqdm
