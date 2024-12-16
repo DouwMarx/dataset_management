@@ -232,6 +232,8 @@ class IMSTest(object):
             healthy_time_signals = np.vstack(healthy_df["time_series"].values)
             faulty_time_signals = np.vstack(faulty_df["time_series"].values)
 
+            # TODO: The samples could possibly be further split since one second of measurement data might be enough/too long
+
             # Stack together and plot kurtosis to verify that the split is correct
             # stacked_time_signals = np.vstack([healthy_time_signals, faulty_time_signals])
             # kurtosis = scipy.stats.kurtosis(stacked_time_signals, axis=1)

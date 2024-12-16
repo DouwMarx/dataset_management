@@ -71,10 +71,14 @@ if __name__ == "__main__":
     if not processed_folder.exists():
         processed_folder.mkdir()
 
-    df = get_cwru_data_frame(min_average_events_per_rev=10,
+    df = get_cwru_data_frame(10,
+                             0,
                              data_path=raw_folder
                              )
     # Further limit to DE measurement location (Measure at the location where the faulty is present)
+    # df = df[(df["Sampling Rate [kHz]"] == "48") & (df["Measurement Location"] == "DE") & (df["Fault Location"] == "DE") & (
+    #             df["Shaft speed [rpm]"] == "1772") & (df["Fault Width [mm]"] == "0.53")]
+    # The envelope spectrums tend to be most clean for the data above
 
     new_columns = df.apply(get_derived_features_and_domain_knowledge, axis=1, result_type="expand")
     df[new_columns.columns] = new_columns

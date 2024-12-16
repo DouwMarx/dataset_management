@@ -114,8 +114,20 @@ BPFO: 3.585
 FTF: 0.3983
 BSF: 2.357
 
+# Data that is not present
+```
+((df["Sampling Rate [kHz]"]=="48") & (df["Measurement Location"]=="FE") & (df["Fault Location"]=="FE")).sum()
+```
+0
+
+From the query, it seems that there are no data present for the Fan end faults and Fan end measurement location. This seems consistent with the table of content of Smith and Randall, 2009.
+
 # Other tips
 Something that is rather confusing is that terms like drive-end and fan-end can refer to two different things.
 In one case, if refers to where the faulty bearing is placed for the test.
 In the other case, it refers to the location where the measurement is made.
 
+# Understanding the format of the pandas dataframe
+The basic_query_and_model.py script should be helpfull for understanding the structure.
+One possibly confusing point is that each row of the dataframe (think spreadsheet) corresponds to a given dataset (i.e. operating condition, fault severity measurement location etc.).
+This means that for each row, the columns "Time Series" will contain an array of shape (n_signals, 1, n_samples_in_signal). 

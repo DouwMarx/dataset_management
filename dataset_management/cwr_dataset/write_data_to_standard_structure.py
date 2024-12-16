@@ -309,14 +309,14 @@ if __name__ == "__main__":
     min_average_events_per_rev = 8
     write_cwru_to_standard_file_structure(min_average_events_per_rev) # If you want folders with each operating condition
 
-    raw_directory = pathlib.Path(__file__).parent.joinpath("raw_data")
-    write_directory = pathlib.Path(__file__).parent.joinpath("processed_data")
-    # Make write directory if it does not exist
-    if not write_directory.exists():
-        write_directory.mkdir()
-
-    get_cwru_data_frame(min_average_events_per_rev,
-                        overlap=0.5,
-                        data_path= raw_directory,
-                        # data_path= cwr_path,
-                        path_to_write=write_directory.joinpath("cwr_dataframe.pkl")) # One big dataframe with everything
+    # raw_directory = pathlib.Path(__file__).parent.joinpath("raw_data")
+    # write_directory = pathlib.Path(__file__).parent.joinpath("processed_data")
+    # # Make write directory if it does not exist
+    # if not write_directory.exists():
+    #     write_directory.mkdir()
+    #
+    # get_cwru_data_frame(min_average_events_per_rev,
+    #                     overlap=0.5,
+    #                     data_path= raw_directory,
+    #                     # data_path= cwr_path,
+    #                     path_to_write=write_directory.joinpath("cwr_dataframe.pkl")) # One big dataframe with everything
