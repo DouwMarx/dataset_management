@@ -51,9 +51,17 @@ for vehicle in ["Mondeo",  "Vectra"]:
     print("Number of samples")
     print(number_of_samples_per_mode)
 
-    normal_data = data_map[normal_indexes][:, :segment_length] # Using first 1k  samples in case the might might have been issues due to non-periodic signals in sim
-    whistle_data = data_map[whistle_indexes][:, :segment_length]
-    leakage_data = data_map[leakage_indexes][:, :segment_length]
+    # normal_data = data_map[normal_indexes][:, :segment_length] # Using first 1k  samples in case the might might have been issues due to non-periodic signals in sim
+    # whistle_data = data_map[whistle_indexes][:, :segment_length]
+    # leakage_data = data_map[leakage_indexes][:, :segment_length]
+
+    # For creating bigger datasets. We will stack n_blocks of segment_length
+    n_blocks = 8
+
+    # Reshape the data to stack n_blocks of segment_length
+    normal_data = data_map[normal_indexes][:, :segment_length * n_blocks].reshape(-1, segment_length)
+    whistle_data = data_map[whistle_indexes][:, :segment_length * n_blocks].reshape(-1, segment_length)
+    leakage_data = data_map[leakage_indexes][:, :segment_length * n_blocks].reshape(-1, segment_length)
 
     # Save the whistle_data for faster prototyping
     np.save(data_dir.joinpath(vehicle + "_normal_sounds.npy"), normal_data)

@@ -158,3 +158,9 @@ cython_debug/
 *.pdf
 
 dataset_management/cwr_dataset/processed_data/
+
+# Ignore the .virtual_documents folder created by jupyter notebook
+.virtual_documents/
+
+# Ignore .csv files
+*.csv
