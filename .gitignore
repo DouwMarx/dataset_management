@@ -158,9 +158,13 @@ cython_debug/
 *.pdf
 
 dataset_management/cwr_dataset/processed_data/
+dataset_management/mfpt/raw_data/
 
 # Ignore the .virtual_documents folder created by jupyter notebook
 .virtual_documents/
 
 # Ignore .csv files
 *.csv
+
+# mfpt plots
+*.png
