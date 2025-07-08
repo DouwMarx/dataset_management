@@ -17,9 +17,7 @@ def export_data_to_file_structure(dataset_name: str, healthy_data: np.array, fau
 
     # Save the data
     np.save(str(healthy_data_path.joinpath('healthy.npy')), healthy_data)
-    # np.save(str(healthy_data_path.joinpath('healthy.npy')), healthy_data)
     for severity, faulty_data in faulty_data_dict.items():
-        # faulty_data.to_pickle(str(faulty_data_path.joinpath(f'faulty_{severity}.pkl')))
         np.save(str(faulty_data_path.joinpath(f'faulty_{severity}.npy')), faulty_data)
 
     # Export the metadata to a json file

@@ -66,6 +66,9 @@ python -m dataset_management.mfpt.write_data_to_standard_structure
 Note that the baseline condition is only provided for the 270 lbs load case, meaning that a comparison between baseline and faulty conditions is only possible for one load condition for an outer race fault.
 Note that there is a discrepancy between the fault frequencies provided and those calculated using bearing parameters. I have had most success with the ones calculated from the bearing geometry.
 
+Also, when plotting the PSD of the normal and faulty data that have the same load of 270 lbs, there is not really a reasonable overlap in the spectra between the normal and faulty data. 
+For example, the normal data has some resonance at 14kHz, which somehow disappears under faulty conditions, which is unexpected.
+
 ## Source
 The dataset was originally published by the MFPT Society and is available at:
 https://www.mfpt.org/fault-data-sets/

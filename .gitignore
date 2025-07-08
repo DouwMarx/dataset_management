@@ -146,6 +146,7 @@ cython_debug/
 *.npy
 *.pkl
 *.mat
+*.rar
 
 # Model weigths
 *.pt

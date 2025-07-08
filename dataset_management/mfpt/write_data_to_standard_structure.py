@@ -4,8 +4,12 @@ import warnings
 
 import numpy as np
 from scipy.io import loadmat
+from scipy.signal import welch
+import sys
+sys.path.append(str(pathlib.Path(__file__).parent.parent.parent))
 from dataset_management.ultils.write_data_in_standard_format import export_data_to_file_structure
 from file_definitions import biased_anomaly_detection_path
+import plotly.graph_objects as go
 
 """
 This script organizes the MFPT bearing fault dataset into the standard structure.
@@ -17,7 +21,7 @@ class MFPT(object):
     Used to read and write the MFPT dataset to a standard file structure
     """
 
-    def __init__(self, name="MFPT", overlap=0.0, fault_events_per_segment=10):
+    def __init__(self, name="MFPT", overlap=0.0, fault_events_per_segment=8):
         """
         Initialize the MFPT dataset handler
         
@@ -127,14 +131,24 @@ class MFPT(object):
         
         # Get the bearing struct
         bearing = mat_data['bearing'][0, 0]
+
+
+        # Check that the signal is does not have more than 1 channel
+        if bearing['gs'].ndim > 2:
+            raise ValueError(f"Signal in {file_path} has more than 1 channel. Expected a single channel signal.")
+
         
         # Extract data from the bearing struct
         signal = bearing['gs'].flatten()
         
+        print(f"Loaded signal from {file_path} with shape {signal.shape}")
         # Extract metadata
         sample_rate = int(bearing['sr'][0, 0])
+        print("Sample rate:", sample_rate)
         load = bearing['load'][0, 0]
+        # print("Bearing load:", load)
         shaft_rate = int(bearing['rate'][0, 0])
+        # print("Shaft rate:", shaft_rate)
         
         # Convert load to int if possible
         if isinstance(load, (np.ndarray)) and load.dtype.kind in 'SU':
@@ -266,10 +280,12 @@ def write_mfpt_to_standard_structure():
         }
         
         # Calculate outer race fault frequency
-        metadata["fault_frequencies"] = {
-            "outer_race": mfpt_data.get_expected_outer_race_fault_frequency()
-        }
-        
+        # metadata["expected_fault_frequency"] = {
+        #     "outer_race": mfpt_data.get_expected_outer_race_fault_frequency()
+        # }
+        outer_race_ff = mfpt_data.get_expected_outer_race_fault_frequency()
+        metadata["expected_fault_frequencies"] = {mode: outer_race_ff for mode in faulty_data_dict.keys()}
+
         # Export data to standard structure
         export_data_to_file_structure(
             dataset_name=dataset_name,
@@ -283,4 +299,42 @@ def write_mfpt_to_standard_structure():
 
 
 if __name__ == "__main__":
-    write_mfpt_to_standard_structure()
+    write_mfpt_to_standard_structure() # Comment out the original function call
+
+    # mfpt_data = MFPT(name="MFPT", overlap=0.0, fault_events_per_segment=100)
+    # baseline_data, outer_race_fault_data = mfpt_data.load_data()
+
+    # # Extract 3 healthy signals
+    # signals_to_plot = []
+    # for i in range(min(3, len(baseline_data))):
+    #     # Access the first segment of the healthy data
+    #     signal = baseline_data[i][0][0, 0, :]
+    #     sample_rate = baseline_data[i][1]['sample_rate']
+    #     signals_to_plot.append((signal, sample_rate, f"Healthy Signal {i+1} (Load: {baseline_data[i][1]['load']} lbs)"))
+
+    # # Extract 3 faulty signals
+    # for i in range(min(3, len(outer_race_fault_data))):
+    #     # Access the first segment of the faulty data
+    #     signal = outer_race_fault_data[i][0][0, 0, :]
+    #     sample_rate = outer_race_fault_data[i][1]['sample_rate']
+    #     signals_to_plot.append((signal, sample_rate, f"Faulty Signal {i+1} (Load: {outer_race_fault_data[i][1]['load']} lbs, Fault: {outer_race_fault_data[i][1]['fault_num']})"))
+
+    # # Create a directory for plots if it doesn't exist
+    # plot_dir = pathlib.Path(__file__).parent.joinpath("plots", "psd_plots")
+    # plot_dir.mkdir(parents=True, exist_ok=True)
+
+    # fig = go.Figure()
+
+    # for signal, sample_rate, label in signals_to_plot:
+    #     frequencies, psd = welch(signal, fs=sample_rate, nperseg=10000)
+    #     fig.add_trace(go.Scatter(x=frequencies, y=psd, mode='lines', name=label))
+    
+    # fig.update_layout(
+    #     title="Power Spectral Density of Healthy and Faulty Signals",
+    #     xaxis_title="Frequency (Hz)",
+    #     yaxis_title="Power/Frequency (dB/Hz)",
+    #     hovermode="x unified"
+    # )
+    # # fig.write_html(str(plot_dir.joinpath("combined_psd_plot.html")))
+    # # print(f"Generated combined PSD plot: {str(plot_dir.joinpath('combined_psd_plot.html'))}")
+    # fig.show()

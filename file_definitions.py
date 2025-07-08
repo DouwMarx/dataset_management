@@ -12,4 +12,4 @@ lms_path = Path("/home/douwm/data/LMS")
 cwr_path = Path("/home/douwm/data/CWR")
 
 
-biased_anomaly_detection_path = "/home/douwm/projects/PhD/code/biased_anomaly_detection/data"
+biased_anomaly_detection_path = "/home/douwm/projects/PhD/code/biased_anomaly_detection/datasets"
