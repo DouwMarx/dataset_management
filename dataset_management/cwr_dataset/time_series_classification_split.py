@@ -2,9 +2,12 @@ import pathlib
 import numpy as np
 import pandas as pd
 
-from dataset_management.cwr_dataset.write_data_to_standard_structure import get_cwru_data_frame
-pd.set_option('display.width', 400)
-pd.set_option('display.max_columns', 10)
+from dataset_management.cwr_dataset.write_data_to_standard_structure import (
+    get_cwru_data_frame,
+)
+
+pd.set_option("display.width", 400)
+pd.set_option("display.max_columns", 10)
 processed_dir = pathlib.Path(__file__).parent.joinpath("processed_data")
 classification_task_dir = processed_dir.joinpath("classification_task_data")
 
@@ -12,10 +15,9 @@ if not classification_task_dir.exists():
     classification_task_dir.mkdir()
 
 raw_folder = pathlib.Path(__file__).parent.joinpath("raw_data")
-df = get_cwru_data_frame(min_average_events_per_rev=10,
-                         overlap=0.5,
-                         data_path=raw_folder
-                         )
+df = get_cwru_data_frame(
+    min_average_events_per_rev=10, overlap=0.5, data_path=raw_folder
+)
 
 
 train_ratio = 0.6
@@ -29,18 +31,24 @@ fault_location = "DE"
 # Get the applicable datasets
 df_entries = []
 sub_data_sets = df[
-    (df["Measurement Location"] == measurement_location) &\
-    (df["Sampling Rate [kHz]"] == sampling_rate) &\
-    (df["Fault Location"].isin(["NONE", fault_location])) # Only faults that occur at the measurement location
+    (df["Measurement Location"] == measurement_location)
+    & (df["Sampling Rate [kHz]"] == sampling_rate)
+    & (
+        df["Fault Location"].isin(["NONE", fault_location])
+    )  # Only faults that occur at the measurement location
 ]
 
-print("Dataset sizes:", df["Signals"].apply(lambda x:np.shape(x)[0]).unique())
-print("Signal lengths:", df["Signals"].apply(lambda x:np.shape(x)[-1]).unique())
+print("Dataset sizes:", df["Signals"].apply(lambda x: np.shape(x)[0]).unique())
+print("Signal lengths:", df["Signals"].apply(lambda x: np.shape(x)[-1]).unique())
 # Remove 'File Number', 'Fault Frequency'
 sub_data_sets = sub_data_sets.drop(["File Number", "Fault Frequency"], axis=1)
 
 # Remove Fault mode Outer Race Fault: Orthogonal and Outer Race: Opposite
-sub_data_sets = sub_data_sets[~sub_data_sets["Fault Mode"].isin(["Outer Race Fault: Orthogonal", "Outer Race: Opposite "])]
+sub_data_sets = sub_data_sets[
+    ~sub_data_sets["Fault Mode"].isin(
+        ["Outer Race Fault: Orthogonal", "Outer Race: Opposite "]
+    )
+]
 # Check sub_data_sets to understand which fault modes are present
 
 fault_modes_present = sub_data_sets["Fault Mode"].unique()
@@ -53,26 +61,30 @@ for i, row in sub_data_sets.iterrows():
 
     # Do splitting, considering that data has overlap
     n_signals = np.shape(signals_for_dataset)[0]
-    n_signals = n_signals - 2  # Remove the signal between train and val and val and test to avoid leakage (50% overlap)
+    n_signals = (
+        n_signals - 2
+    )  # Remove the signal between train and val and val and test to avoid leakage (50% overlap)
 
     n_train = int(n_signals * train_ratio)
     n_val = int(n_signals * val_ratio)
     n_test = n_signals - n_train - n_val
 
-    train_signals = signals_for_dataset[:n_train - 1, :, :]
-    val_signals = signals_for_dataset[n_train:n_train + n_val - 1, :, :]
-    test_signals = signals_for_dataset[n_train + n_val:, :, :]
+    train_signals = signals_for_dataset[: n_train - 1, :, :]
+    val_signals = signals_for_dataset[n_train : n_train + n_val - 1, :, :]
+    test_signals = signals_for_dataset[n_train + n_val :, :, :]
 
     other_row_info = row.drop(["Signals"])
     other_row_info = other_row_info.to_dict()
 
-    for set_of_signals, set_name in zip([train_signals, val_signals, test_signals], ["train", "val", "test"]):
+    for set_of_signals, set_name in zip(
+        [train_signals, val_signals, test_signals], ["train", "val", "test"]
+    ):
         for signal in set_of_signals:
             signal_dict = other_row_info.copy()
             signal_dict["time series"] = signal.flatten()
-            signal_dict["label"] =  int(label_mapping[row["Fault Mode"]])
+            signal_dict["label"] = int(label_mapping[row["Fault Mode"]])
             signal_dict["set"] = set_name
-            df_entries.append(signal_dict )
+            df_entries.append(signal_dict)
 
 # Create a dataframe
 dataset_df = pd.DataFrame(df_entries)
@@ -91,16 +103,29 @@ for set_name in ["train", "val", "test"]:
 
     # Write the signals
     signals = np.stack(set_df["time series"].apply(lambda x: np.array(x)).values)
-    np.savetxt(classification_task_dir.joinpath(f"{set_name}_signals.csv"), signals, delimiter=",")
+    np.savetxt(
+        classification_task_dir.joinpath(f"{set_name}_signals.csv"),
+        signals,
+        delimiter=",",
+    )
 
     # Write the labels
     labels = set_df["label"].values
-    np.savetxt(classification_task_dir.joinpath(f"{set_name}_labels.csv"), labels, delimiter=",", fmt="%d")
+    np.savetxt(
+        classification_task_dir.joinpath(f"{set_name}_labels.csv"),
+        labels,
+        delimiter=",",
+        fmt="%d",
+    )
 
     # Write the metadata and labels
     # For the test set, the fault mode and labels are excluded
     if set_name == "test":
-        set_df = set_df.drop(["Fault Location", "Fault Width [mm]", "Fault Mode", "label"], axis=1)
+        set_df = set_df.drop(
+            ["Fault Location", "Fault Width [mm]", "Fault Mode", "label"], axis=1
+        )
 
     metadata_and_labels = set_df.drop(["time series"], axis=1)
-    metadata_and_labels.to_csv(classification_task_dir.joinpath(f"{set_name}_metadata.csv"), index=False)
+    metadata_and_labels.to_csv(
+        classification_task_dir.joinpath(f"{set_name}_metadata.csv"), index=False
+    )

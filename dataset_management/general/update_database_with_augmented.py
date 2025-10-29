@@ -1,15 +1,16 @@
-from augment_data.envelope_with_traingular_spikes.make_envelope_spectrum_triangular import \
-    AugmentedEnvelopeFromFaultFrequencies,AugmentedEnvelopeImprovedTriangular
+from augment_data.envelope_with_traingular_spikes.make_envelope_spectrum_triangular import (
+    AugmentedEnvelopeFromFaultFrequencies,
+    AugmentedEnvelopeImprovedTriangular,
+)
 from database_definitions import make_db
-from dataset_management.ultils.update_database import DerivedDoc, new_docs_from_computed
+from dataset_management.utils.update_database import DerivedDoc, new_docs_from_computed
 import numpy as np
 
 
-class Augmentation():
+class Augmentation:
     def __init__(self, db_to_act_on):
         self.db_to_act_on = db_to_act_on
-        self.db, self.client = make_db(
-            db_to_act_on)
+        self.db, self.client = make_db(db_to_act_on)
         self.max_severity = self.db["processed"].distinct("severity")[-1]
 
         self.failure_modes = ["ball", "inner", "outer"]
@@ -19,21 +20,22 @@ class Augmentation():
 
         self.env_spec_max_for_mode = {}
         for mode in self.db["processed"].distinct("mode"):
-            docs = self.db["processed"].find(
-                {"envelope_spectrum": {"$exists": True},
-                 "mode": mode
-                 }).sort("severity", direction=-1).limit(
-                20)  # Use the final 20 documents to estimate the maximum severity
-            env_spec_max = [np.max(doc["envelope_spectrum"]["mag"][100:]) for doc in docs]
+            docs = (
+                self.db["processed"]
+                .find({"envelope_spectrum": {"$exists": True}, "mode": mode})
+                .sort("severity", direction=-1)
+                .limit(20)
+            )  # Use the final 20 documents to estimate the maximum severity
+            env_spec_max = [
+                np.max(doc["envelope_spectrum"]["mag"][100:]) for doc in docs
+            ]
             self.env_spec_max_for_mode.update({mode: np.median(env_spec_max)})
 
-        print("Brute force idealized augmentation values to use for " + db_to_act_on )
+        print("Brute force idealized augmentation values to use for " + db_to_act_on)
         print(self.env_spec_max_for_mode)
 
         # Overwrite variable as manual specification
-        self.env_spec_max_for_mode = {"ball":0.005,
-                                      "inner":0.005,
-                                      "outer":0.005}
+        self.env_spec_max_for_mode = {"ball": 0.005, "inner": 0.005, "outer": 0.005}
         print(self.env_spec_max_for_mode)
 
     def compute_augmentation_from_healthy_feature_doc(self, doc):
@@ -68,13 +70,16 @@ class Augmentation():
 
         augmented_doc_for_mode = []
         # Loop through the different failure modes that could appear
-        ases = AugmentedEnvelopeImprovedTriangular(healthy_envelope_spectrum_freq,alpha=2e-2,traingle_base=20) # 30Hz traingle base
+        ases = AugmentedEnvelopeImprovedTriangular(
+            healthy_envelope_spectrum_freq, alpha=2e-2, traingle_base=20
+        )  # 30Hz traingle base
         for fault_mode in ["ball", "inner", "outer"]:
             expected_fault_frequency = expected_fault_frequency_for_mode[fault_mode]
 
             if fault_mode in self.env_spec_max_for_mode:
                 peak_mag = self.env_spec_max_for_mode[
-                    fault_mode]  # TODO: notice that knowing the expected magnitude is cheating.
+                    fault_mode
+                ]  # TODO: notice that knowing the expected magnitude is cheating.
             else:
                 peak_mag = self.env_spec_max_for_mode[max(self.env_spec_max_for_mode)]
 
@@ -87,18 +92,26 @@ class Augmentation():
             #                                              decay_percentage_over_interval=0.999
             #                                              )  # TODO: Fix peak magnitude, providing augmentation parameters?
 
-            augmented_envelope_spectrum = ases.get_augmented_ses(healthy_envelope_spectrum_mag,peak_mag,expected_fault_frequency)
+            augmented_envelope_spectrum = ases.get_augmented_ses(
+                healthy_envelope_spectrum_mag, peak_mag, expected_fault_frequency
+            )
 
-            computed = {"envelope_spectrum": {"freq": list(ases.frequencies),
-                                              "mag": list(augmented_envelope_spectrum)},
-                        "augmented": True,
-                        "meta_data": ases.augmentation_meta_data,
-                        "mode": fault_mode,
-                        "severity": 999}  # Use 999 severity for now
+            computed = {
+                "envelope_spectrum": {
+                    "freq": list(ases.frequencies),
+                    "mag": list(augmented_envelope_spectrum),
+                },
+                "augmented": True,
+                "meta_data": ases.augmentation_meta_data,
+                "mode": fault_mode,
+                "severity": 999,
+            }  # Use 999 severity for now
 
             augmented_doc_for_mode.append(computed)
 
-        new_docs = new_docs_from_computed(doc, augmented_doc_for_mode)  # Add the meta-data keys
+        new_docs = new_docs_from_computed(
+            doc, augmented_doc_for_mode
+        )  # Add the meta-data keys
         return new_docs
 
 
@@ -109,13 +122,19 @@ def ims_outer_t2_c1_aug(db_to_act_on):
     aug_obj = Augmentation(db_to_act_on)
 
     # Compute augmented data
-    query = {"envelope_spectrum": {"$exists": True},
-             "severity": 0,
-             'ims_test_number': "2",
-             'ims_channel_number': "1",
-             }
-    DerivedDoc(query, "processed", "augmented", aug_obj.compute_augmentation_from_healthy_feature_doc,
-               db_to_act_on).update_database(parallel=False)
+    query = {
+        "envelope_spectrum": {"$exists": True},
+        "severity": 0,
+        "ims_test_number": "2",
+        "ims_channel_number": "1",
+    }
+    DerivedDoc(
+        query,
+        "processed",
+        "augmented",
+        aug_obj.compute_augmentation_from_healthy_feature_doc,
+        db_to_act_on,
+    ).update_database(parallel=False)
 
     return db["augmented"]
 
@@ -128,8 +147,13 @@ def main(db_to_act_on):
 
     # Compute augmented data
     query = {"envelope_spectrum": {"$exists": True}, "severity": 0}
-    DerivedDoc(query, "processed", "augmented", aug_obj.compute_augmentation_from_healthy_feature_doc,
-               db_to_act_on).update_database(parallel=False)
+    DerivedDoc(
+        query,
+        "processed",
+        "augmented",
+        aug_obj.compute_augmentation_from_healthy_feature_doc,
+        db_to_act_on,
+    ).update_database(parallel=False)
 
     return db["augmented"]
 

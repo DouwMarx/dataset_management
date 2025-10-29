@@ -2,7 +2,6 @@
 Original code by Fadi Karakafi
 """
 
-
 import scipy.io
 from scipy import signal
 import numpy as np
@@ -10,6 +9,7 @@ import matplotlib.pyplot as plt
 from scipy.signal import butter, lfilter
 
 """#Signal Processing Class"""
+
 
 class SP:
     def __init__(self, Fs, Bw, fault_frequencies, visual):
@@ -22,7 +22,7 @@ class SP:
         nyq = 0.5 * fs
         low = lowcut / nyq
         high = highcut / nyq
-        b, a = butter(order, [low, high], btype='band')
+        b, a = butter(order, [low, high], btype="band")
         y = lfilter(b, a, data)
         return y
 
@@ -41,35 +41,39 @@ class SP:
         for k in range(len(self.fault_frequencies)):
             indexes[k] = np.argmin(np.abs(f_ax - self.fault_frequencies[k]))
 
-        if (self.visual == True):
-          plt.figure()
-          plt.plot(f_ax, Env_spec)
-          plt.xlim(0, 500)
-          plt.xlabel('Frequency (Hz)')
-          plt.ylabel('Envelope Spectrum')
-          plt.title('Envelope Spectrum')
-          plt.show()
+        if self.visual == True:
+            plt.figure()
+            plt.plot(f_ax, Env_spec)
+            plt.xlim(0, 500)
+            plt.xlabel("Frequency (Hz)")
+            plt.ylabel("Envelope Spectrum")
+            plt.title("Envelope Spectrum")
+            plt.show()
 
         # if (1 / len(self.fault_frequencies)) * np.sum(Env_spec[indexes]) > np.mean(Env_spec) + 5 * np.std(Env_spec):
         #     return 1
         # else:
         #     return 0
-        return ((1 / len(self.fault_frequencies)) * np.sum(Env_spec[indexes]) - np.mean(Env_spec))/np.std(Env_spec)
+        return (
+            (1 / len(self.fault_frequencies)) * np.sum(Env_spec[indexes])
+            - np.mean(Env_spec)
+        ) / np.std(Env_spec)
+
 
 """#Main"""
 
 
 plt.figure("Histogram")
 
-for matfile in ['simple_healty_dataset.mat', 'simple_faulty_dataset.mat']:
-# matfile = 'simple_healty_dataset.mat'
-# # matfile = 'simple_faulty_dataset.mat'
-    directory= "/home/douwm/data/safran_simulated_gearbox_and_bearing/data/" + matfile
+for matfile in ["simple_healty_dataset.mat", "simple_faulty_dataset.mat"]:
+    # matfile = 'simple_healty_dataset.mat'
+    # # matfile = 'simple_faulty_dataset.mat'
+    directory = "/home/douwm/data/safran_simulated_gearbox_and_bearing/data/" + matfile
     mat_data = scipy.io.loadmat(directory)
 
-    Fs = mat_data['Fs'][0, 0]
-    x = mat_data['data'][0]
-    step = 10 * mat_data['Event'][0, 0]
+    Fs = mat_data["Fs"][0, 0]
+    x = mat_data["data"][0]
+    step = 10 * mat_data["Event"][0, 0]
     nb_seg = len(x) // step
 
     nH = 7
@@ -77,15 +81,14 @@ for matfile in ['simple_healty_dataset.mat', 'simple_faulty_dataset.mat']:
     Bw = [2500, 3000]
     visual = False
 
-    sp = SP(Fs, Bw, fault_frequencies,visual)
+    sp = SP(Fs, Bw, fault_frequencies, visual)
 
     sp_labels = np.zeros(nb_seg)
 
     for i in range(nb_seg):
-        seg = x[i * step: (i + 1) * step]
+        seg = x[i * step : (i + 1) * step]
         H = sp.forward(seg)
         sp_labels[i] = H
-
 
     print("Mean indicator for {}: {}".format(matfile, np.mean(sp_labels)))
 

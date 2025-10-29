@@ -3,11 +3,15 @@ from pathlib import Path
 
 from experiments import experiments as experiment_dict
 from time import time, sleep
-from informed_anomaly_detection.visualisation.visualisation_pipeline import make_plots, \
-    make_plots_with_training_progress
+from informed_anomaly_detection.visualisation.visualisation_pipeline import (
+    make_plots,
+    make_plots_with_training_progress,
+)
 
 # meeting_path = Path("/home/douwm/projects/PhD/reports/meetings/20220321_informed_anomaly_detection_on_ims/20220321_beamer/images")
-plots_path = Path("/home/douwm/projects/PhD/code/informed_anomaly_detection/reports/plots")
+plots_path = Path(
+    "/home/douwm/projects/PhD/code/informed_anomaly_detection/reports/plots"
+)
 # phme_report_path = Path("/home/douwm/projects/PhD/reports/conferences/PHME2022/paper_tex/src/images/plots")
 # phme_report_path = Path("/home/douwm/projects/PhD/reports/conferences/PHME2022/marx_gryllias_domain_knowlege_informed_unsupervised/src/Figures/plots")
 
@@ -48,7 +52,9 @@ def run_augment():
 
 def run_models():
     t_start = time()
-    experiment_specs["model_func"](db_to_act_on, experiment_specs["training_parameters"])
+    experiment_specs["model_func"](
+        db_to_act_on, experiment_specs["training_parameters"]
+    )
     print("Models trained in :", time() - t_start)
 
 
@@ -66,17 +72,21 @@ def run_metrics():
 
 def run_plots():
     # make_plots(db_to_act_on, "latent_directions_maximally_different_" + experiment, plots_path, export_pdf=True,experiment_name=experiment)
-    make_plots_with_training_progress(db_to_act_on, plots_path, export_pdf=True,experiment_name=experiment)
+    make_plots_with_training_progress(
+        db_to_act_on, plots_path, export_pdf=True, experiment_name=experiment
+    )
+
 
 def main(to_run):
-    run_dict = {"raw": run_raw,
-                "process": run_process,
-                "augment": run_augment,
-                "models": run_models,
-                "encodings": run_encodings,
-                "metrics": run_metrics,
-                "plots": run_plots,
-                }
+    run_dict = {
+        "raw": run_raw,
+        "process": run_process,
+        "augment": run_augment,
+        "models": run_models,
+        "encodings": run_encodings,
+        "metrics": run_metrics,
+        "plots": run_plots,
+    }
 
     for func_to_run in to_run:
         run_dict[func_to_run]()
@@ -88,14 +98,13 @@ if __name__ == "__main__":
     # main(["augment"])
     # main(["process","augment"])
     # main(["models"])
-    main(["models", "encodings", "metrics","plots"])
+    main(["models", "encodings", "metrics", "plots"])
     # main(["plots"])
     # main(["models", "encodings", "metrics", "plots"])
     # main(["models", "encodings"])
     # main(["models","encodings","metrics"])
     # main(["metrics","plots"])
     # main(["plots"])
-
 
     # Running for all IMS datasets
     # for experiment in ["ims_t2_c1_outer","ims_t1_b3_inner","ims_t1_b4_ball","ims_t3_b3_outer"]:

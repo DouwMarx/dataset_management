@@ -7,15 +7,25 @@ from scipy.signal import butter, filtfilt
 import matplotlib.pyplot as plt
 from scipy.signal import hilbert
 from scipy.signal import butter, lfilter
-from dataset_management.cwr_dataset.write_data_to_standard_structure import get_cwru_data_frame
-from dataset_management.ultils.gradient_prescription import TriangularPeaks
+from dataset_management.cwr_dataset.write_data_to_standard_structure import (
+    get_cwru_data_frame,
+)
+from dataset_management.utils.gradient_prescription import TriangularPeaks
 
 
 def bandpass(signals, lower, upper, fs, order=6):
-    b, a = butter(order, [lower / (0.5 * fs), upper / (0.5 * fs)], btype='band')
+    b, a = butter(order, [lower / (0.5 * fs), upper / (0.5 * fs)], btype="band")
     return filtfilt(b, a, signals, axis=-1)
 
-def get_envelope_spectrum(signals, fs, filter_order=50, low_cut_as_fraction_of_fs=1 / 4, high_cut_as_fraction_of_fs=3 / 8, truncate_at_fraction_of_nyquist=1 / 2):
+
+def get_envelope_spectrum(
+    signals,
+    fs,
+    filter_order=50,
+    low_cut_as_fraction_of_fs=1 / 4,
+    high_cut_as_fraction_of_fs=3 / 8,
+    truncate_at_fraction_of_nyquist=1 / 2,
+):
     """
     Get the envelope spectrum of a signal
     """
@@ -32,21 +42,25 @@ def get_envelope_spectrum(signals, fs, filter_order=50, low_cut_as_fraction_of_f
 
     filtered_signals = bandpass(signals, lowcut, highcut, fs, order=filter_order)
 
-    analytic_signal = hilbert(filtered_signals) # Get the analytic signal
-    amplitude_envelope = np.abs(analytic_signal) # Get the amplitude envelope
+    analytic_signal = hilbert(filtered_signals)  # Get the analytic signal
+    amplitude_envelope = np.abs(analytic_signal)  # Get the amplitude envelope
 
     # Detrend the envelope
-    amplitude_envelope = amplitude_envelope - np.mean(amplitude_envelope, axis=-1, keepdims=True)
+    amplitude_envelope = amplitude_envelope - np.mean(
+        amplitude_envelope, axis=-1, keepdims=True
+    )
 
-
-    envelope_spectrum = np.abs(np.fft.rfft(amplitude_envelope,axis=-1)) # Get the envelope spectrum
-    freqs = np.fft.rfftfreq(amplitude_envelope.shape[-1], d=1/fs) # Get the frequencies for the spectrum
+    envelope_spectrum = np.abs(
+        np.fft.rfft(amplitude_envelope, axis=-1)
+    )  # Get the envelope spectrum
+    freqs = np.fft.rfftfreq(
+        amplitude_envelope.shape[-1], d=1 / fs
+    )  # Get the frequencies for the spectrum
 
     if truncate_at_fraction_of_nyquist is not None:
         truncate_at = int(truncate_at_fraction_of_nyquist * envelope_spectrum.shape[-1])
-        envelope_spectrum = envelope_spectrum[:,:truncate_at]
+        envelope_spectrum = envelope_spectrum[:, :truncate_at]
         freqs = freqs[:truncate_at]
-
 
     return envelope_spectrum, freqs
 
@@ -61,8 +75,14 @@ def get_derived_features_and_domain_knowledge(row):
 
     envelope_spectrum, freqs = get_envelope_spectrum(signals, fs=fs, filter_order=20)
     peak_simulator = TriangularPeaks(freqs_to_simulate_for=freqs)
-    expected_fault_spectrum = peak_simulator.get_expected_fault_behaviour(1, fault_frequency)
-    return {"Envelope Spectrum": envelope_spectrum, "Spectrum Freqs": freqs, "Expected Fault Spectrum": expected_fault_spectrum}
+    expected_fault_spectrum = peak_simulator.get_expected_fault_behaviour(
+        1, fault_frequency
+    )
+    return {
+        "Envelope Spectrum": envelope_spectrum,
+        "Spectrum Freqs": freqs,
+        "Expected Fault Spectrum": expected_fault_spectrum,
+    }
 
 
 if __name__ == "__main__":
@@ -71,16 +91,15 @@ if __name__ == "__main__":
     if not processed_folder.exists():
         processed_folder.mkdir()
 
-    df = get_cwru_data_frame(10,
-                             0,
-                             data_path=raw_folder
-                             )
+    df = get_cwru_data_frame(10, 0, data_path=raw_folder)
     # Further limit to DE measurement location (Measure at the location where the faulty is present)
     # df = df[(df["Sampling Rate [kHz]"] == "48") & (df["Measurement Location"] == "DE") & (df["Fault Location"] == "DE") & (
     #             df["Shaft speed [rpm]"] == "1772") & (df["Fault Width [mm]"] == "0.53")]
     # The envelope spectrums tend to be most clean for the data above
 
-    new_columns = df.apply(get_derived_features_and_domain_knowledge, axis=1, result_type="expand")
+    new_columns = df.apply(
+        get_derived_features_and_domain_knowledge, axis=1, result_type="expand"
+    )
     df[new_columns.columns] = new_columns
     # Write to pickle
     df.to_pickle(processed_folder.joinpath("cwru_env_spec.pkl"))
@@ -95,20 +114,34 @@ if __name__ == "__main__":
         freqs = row["Spectrum Freqs"]
         prescription = row["Expected Fault Spectrum"]
 
-        info = row.drop(["Signals", "Envelope Spectrum", "Spectrum Freqs", "Expected Fault Spectrum"])
+        info = row.drop(
+            [
+                "Signals",
+                "Envelope Spectrum",
+                "Spectrum Freqs",
+                "Expected Fault Spectrum",
+            ]
+        )
         info = info.to_dict()
         info = "".join(["{}: {}\n".format(key, value) for key, value in info.items()])
         plt.figure()
         # plt.title("Envelope spectrum for fault mode: {}".format( info))
         # Add the info as text on the background
-        plt.text(0.5, 0.5, info, fontsize=12, ha='left', va='top', alpha=0.5, transform=plt.gca().transAxes)
-
+        plt.text(
+            0.5,
+            0.5,
+            info,
+            fontsize=12,
+            ha="left",
+            va="top",
+            alpha=0.5,
+            transform=plt.gca().transAxes,
+        )
 
         plt.plot(freqs, envelope_spectrum[0], label="True")
-        plt.plot(freqs, prescription*max(envelope_spectrum[0]), label="Prescribed")
+        plt.plot(freqs, prescription * max(envelope_spectrum[0]), label="Prescribed")
 
-        #Plot faulty frequency as vertical line
-        plt.axvline(fault_frequency, color='r', linestyle='--', label="Fault Frequency")
+        # Plot faulty frequency as vertical line
+        plt.axvline(fault_frequency, color="r", linestyle="--", label="Fault Frequency")
 
         plt.show()
-

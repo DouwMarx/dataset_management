@@ -4,10 +4,9 @@ from matplotlib import pyplot as plt
 from scipy.signal import butter, filtfilt
 
 data_dir = pathlib.Path("/home/douwm/data/siemens_isma_2024")
-for vehicle in ["Mondeo",  "Vectra"]:
+for vehicle in ["Mondeo", "Vectra"]:
     whistle_data = np.load(data_dir.joinpath(vehicle + "_whistle_sounds.npy"))
     healthy_data = np.load(data_dir.joinpath(vehicle + "_normal_sounds.npy"))
-
 
     random_index = np.random.randint(0, len(whistle_data))
     whistle_example = whistle_data[random_index].flatten()
@@ -25,7 +24,7 @@ for vehicle in ["Mondeo",  "Vectra"]:
     plt.figure()
     whistle_example_freq = np.fft.rfft(whistle_example)
     healthy_example_freq = np.fft.rfft(healthy_example)
-    freqs = np.fft.rfftfreq(len(whistle_example), d=1/44100)
+    freqs = np.fft.rfftfreq(len(whistle_example), d=1 / 44100)
     plt.plot(freqs, np.abs(whistle_example_freq), label="Whistle")
     plt.plot(freqs, np.abs(healthy_example_freq), label="Healthy")
     plt.legend()
@@ -37,7 +36,7 @@ for vehicle in ["Mondeo",  "Vectra"]:
     high_cut = 10000
 
     def bandpass(signals, lower, upper, fs, order=6):
-        b, a = butter(order, [lower / (0.5 * fs), upper / (0.5 * fs)], btype='band')
+        b, a = butter(order, [lower / (0.5 * fs), upper / (0.5 * fs)], btype="band")
         return filtfilt(b, a, signals, axis=-1)
 
     whistle_example_bandpass = bandpass(whistle_example, low_cut, high_cut, 44100)
@@ -55,7 +54,7 @@ for vehicle in ["Mondeo",  "Vectra"]:
     plt.figure()
     whistle_example_bandpass_freq = np.abs(np.fft.rfft(whistle_example_bandpass))
     healthy_example_bandpass_freq = np.abs(np.fft.rfft(healthy_example_bandpass))
-    freqs = np.fft.rfftfreq(whistle_example_bandpass.shape[-1], d=1/44100)
+    freqs = np.fft.rfftfreq(whistle_example_bandpass.shape[-1], d=1 / 44100)
     plt.plot(freqs, whistle_example_bandpass_freq, label="Whistle")
     plt.plot(freqs, healthy_example_bandpass_freq, label="Healthy")
     plt.legend()
@@ -64,12 +63,16 @@ for vehicle in ["Mondeo",  "Vectra"]:
 
     # apply a high-pass filter on the frequency domaindata  to remove the trend
     def highpass(signals, lower, fs, order=6):
-        b, a = butter(order, lower / (0.5 * fs), btype='high')
+        b, a = butter(order, lower / (0.5 * fs), btype="high")
         return filtfilt(b, a, signals, axis=-1)
 
     # Apply high-pass filter
-    whistle_example_highpass = highpass(whistle_example_bandpass_freq, 100, len(whistle_example_bandpass_freq))
-    healthy_example_highpass = highpass(healthy_example_bandpass_freq, 100, len(healthy_example_bandpass_freq))
+    whistle_example_highpass = highpass(
+        whistle_example_bandpass_freq, 100, len(whistle_example_bandpass_freq)
+    )
+    healthy_example_highpass = highpass(
+        healthy_example_bandpass_freq, 100, len(healthy_example_bandpass_freq)
+    )
 
     # Plot the filtered frequency domain example
     plt.figure()
@@ -98,22 +101,17 @@ for vehicle in ["Mondeo",  "Vectra"]:
 
     # Apply bandpass filter
     # Leave out anyting slower than 1 oscillation per 50 samples and faster than 1 oscillation per 20 samples
-    whistle_example_bandpass_freq = bandpass(whistle_example_bandpass_freq, 1/100, 1/10, 1) # 1 oscillation per 50 samples to 1 oscillation per 20 samples
-    healthy_example_bandpass_freq = bandpass(healthy_example_bandpass_freq, 1/100, 1/10, 1)
+    whistle_example_bandpass_freq = bandpass(
+        whistle_example_bandpass_freq, 1 / 100, 1 / 10, 1
+    )  # 1 oscillation per 50 samples to 1 oscillation per 20 samples
+    healthy_example_bandpass_freq = bandpass(
+        healthy_example_bandpass_freq, 1 / 100, 1 / 10, 1
+    )
 
     # Plot the filtered frequency domain example
     plt.figure()
-    plt.plot(freqs, whistle_example_bandpass_freq, label
-    ="Whistle")
-    plt.plot(freqs, healthy_example_bandpass_freq, label
-    ="Healthy")
+    plt.plot(freqs, whistle_example_bandpass_freq, label="Whistle")
+    plt.plot(freqs, healthy_example_bandpass_freq, label="Healthy")
     plt.legend()
     plt.title(vehicle)
     plt.show()
-
-
-
-
-
-
-

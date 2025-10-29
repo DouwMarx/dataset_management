@@ -27,7 +27,7 @@ for retries in range(5):  # In case something goes wrong, try again
         pass
 
 # Unzip the file
-with zipfile.ZipFile(save_path.joinpath("dgen_desir.zip"), 'r') as zip_ref:
+with zipfile.ZipFile(save_path.joinpath("dgen_desir.zip"), "r") as zip_ref:
     zip_ref.extractall(save_path)
 
 # Clean up the zip file
@@ -39,4 +39,6 @@ for file in save_path.glob("**/*"):
     if file.is_file():
         file.rename(file.parent.joinpath(file.name.lower()))
 
-print("Warning: Original file names are inconsistent in capitalisation. All files are converted to lowercase")
+print(
+    "Warning: Original file names are inconsistent in capitalisation. All files are converted to lowercase"
+)

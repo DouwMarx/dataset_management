@@ -2,7 +2,9 @@ import pathlib
 import pandas as pd
 
 processed_dir = pathlib.Path(__file__).parent.joinpath("processed_data")
-df = pd.read_pickle(processed_dir.joinpath("DE_12_binary-all_fault_modes_speed_fault_location.pkl"))
+df = pd.read_pickle(
+    processed_dir.joinpath("DE_12_binary-all_fault_modes_speed_fault_location.pkl")
+)
 
 """
 Processed data does healthy-faulty split, regardless of fault mode, operating condition and fault location.
@@ -27,6 +29,6 @@ test_y = df[df["set"] == "test"]["label"]
 print("Signal length: ", train_x[0].shape[0])
 
 # Verify test/train/val split percentages
-print("Train %: ", len(train_x)/len(df))
-print("Val %: ", len(val_x)/len(df))
-print("Test %: ", len(test_x)/len(df))
+print("Train %: ", len(train_x) / len(df))
+print("Val %: ", len(val_x) / len(df))
+print("Test %: ", len(test_x) / len(df))

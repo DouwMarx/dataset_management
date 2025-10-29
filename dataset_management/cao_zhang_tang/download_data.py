@@ -14,8 +14,10 @@ def get_all_mat_data_from_figshare():
     if not os.path.exists(download_path):
         os.makedirs(download_path)
 
-    urls = {"time_domain": "https://figshare.com/ndownloader/files/11053469",
-            "order_domain": "https://figshare.com/ndownloader/files/11053466"}
+    urls = {
+        "time_domain": "https://figshare.com/ndownloader/files/11053469",
+        "order_domain": "https://figshare.com/ndownloader/files/11053466",
+    }
 
     # Download the files and save them to the download_path with the same name as in the web page
     for data_name, file_url in tqdm(urls.items()):
